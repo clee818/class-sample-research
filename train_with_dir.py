@@ -6,7 +6,7 @@ import torch.optim as optim
 LOG_INTERVAL = 10
 
 
-def train(epoch, train_loader, network, optimizer, directory, loss_fn=nn.NLLLoss(), verbose=True):
+def train(epoch, train_loader, network, optimizer, directory, loss_fn=nn.NLLLoss(), datatype="float", verbose=True):
     train_counter = []
     train_losses = []
 
@@ -14,7 +14,10 @@ def train(epoch, train_loader, network, optimizer, directory, loss_fn=nn.NLLLoss
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         output = network(data)
-        loss = loss_fn(output.squeeze().float(), target.float())
+        if datatype == "float":
+            loss = loss_fn(output.squeeze().float(), target.float())
+        else: 
+            loss = loss_fn(output.squeeze(), target)
         loss.backward()
         optimizer.step()
         if batch_idx % LOG_INTERVAL == 0:
