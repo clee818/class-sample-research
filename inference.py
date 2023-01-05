@@ -12,7 +12,7 @@ def run_inference_sigmoid(dataloader, network):
     loss = 0
     correct = 0
     
-    loss_fn=nn.BCELoss()
+    loss_fn=nn.BCEWithLogitsLoss()
 
         
     
