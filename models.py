@@ -38,7 +38,8 @@ class SigmoidLogisticRegression(nn.Module):
     def forward(self, x):
         x = x.view(-1, 784)
         x = self.fc(x)
-        return self.sigmoid(x)
+    #    return self.sigmoid(x)
+        return x
 
 
 
@@ -50,4 +51,5 @@ class SoftmaxLogisticRegression(nn.Module):
     def forward(self, x):
         x = x.view(-1, 784)
         x = self.fc(x)
-        return F.log_softmax(x)
+     #   return F.log_softmax(x)
+        return x

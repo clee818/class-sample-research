@@ -5,24 +5,20 @@ import torch.optim as optim
 
 LOG_INTERVAL = 10
 
-def train_sigmoid(epoch, train_loader, network, optimizer, directory=None, verbose=True, binary=True):
+def train_sigmoid(epoch, train_loader, network, optimizer, directory=None, verbose=True):
     train_counter = []
     train_losses = []
    
 
+    loss_fn=nn.BCEWithLogitsLoss()
     
 
     network.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         output = network(data)
-        if binary:
-            loss_fn=nn.BCELoss()
-            loss = loss_fn(output.squeeze().float(), target.float())
-            pred=output.data
-        else:
-            loss_fn=nn.CrossEntropyLoss()
-            loss = loss_fn(output.squeeze(), target)
+        loss = loss_fn(output.squeeze().float(), target.float())
+        pred=output.data
         loss.backward()
         optimizer.step()
         if batch_idx % LOG_INTERVAL == 0 and verbose:
@@ -34,12 +30,13 @@ def train_sigmoid(epoch, train_loader, network, optimizer, directory=None, verbo
     return train_counter, train_losses
 
 
-def train_softmax(epoch, train_loader, network, optimizer, directory=None, verbose=True, loss_fn=nn.CrossEntropyLoss()):
+def train_softmax(epoch, train_loader, network, optimizer, directory=None, verbose=True):
     train_counter = []
     train_losses = []
 
     network.train()
     
+    loss_fn=nn.CrossEntropyLoss()
     
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()

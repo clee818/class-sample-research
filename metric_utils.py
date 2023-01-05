@@ -29,8 +29,8 @@ def auc_softmax(test_loader, network):
     return test_losses, network_auc
 
 
-def accuracy_sigmoid(test_loader, network, binary=False): 
-    test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, binary)
+def accuracy_sigmoid(test_loader, network): 
+    test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network)
     
     acc = accuracy(y_preds, y_true)
     
