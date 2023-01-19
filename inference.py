@@ -13,14 +13,12 @@ def run_inference_sigmoid(dataloader, network):
     correct = 0
     
     loss_fn=nn.BCEWithLogitsLoss()
-
-        
     
     with torch.no_grad():
         for data, target in dataloader:
             output = network(data)
             loss += loss_fn(output.squeeze().float(), target.float()).item()
-            pred=output.data
+            pred=torch.sigmoid(output.data)
             y_preds.extend(pred.float())
             y_true.extend(target.float())
         loss /= len(dataloader.dataset)
@@ -29,7 +27,6 @@ def run_inference_sigmoid(dataloader, network):
 
 def run_inference_softmax(dataloader, network): 
     losses = []
-    
     y_preds = []
     unbinarized_preds = []
     y_true = []
@@ -39,7 +36,6 @@ def run_inference_softmax(dataloader, network):
     correct = 0
     
     loss_fn=nn.CrossEntropyLoss()
-    
     
     with torch.no_grad():
         for data, target in dataloader:

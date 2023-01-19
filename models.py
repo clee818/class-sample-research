@@ -38,7 +38,7 @@ class SigmoidLogisticRegression(nn.Module):
     def forward(self, x):
         x = x.view(-1, 784)
         x = self.fc(x)
-    #    return self.sigmoid(x)
+       # return self.sigmoid(x)
         return x
 
 
