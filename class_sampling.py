@@ -5,12 +5,20 @@ import numpy as np
 class Reduce(Dataset):
     # reduces number of classes
     # takes in original dataset, target # of classes
-    def __init__(self, original_dataset, num_classes, nums=(0,1)):        
+    def __init__(self, original_dataset, num_classes, nums=(0,1), CIFAR=False):        
         
-        indices = np.isin(original_dataset.train_labels, nums) 
+        
             
-        self.images = original_dataset.train_data[indices==1].unsqueeze(1)
-        self.labels = original_dataset.train_labels[indices==1]
+        
+        if CIFAR: 
+            indices = np.isin(original_dataset.targets, nums) 
+            self.images = torch.from_numpy(original_dataset.data[indices==1])
+            self.labels = torch.from_numpy(np.array(original_dataset.targets)[indices==1])
+        else:
+            indices = np.isin(original_dataset.train_labels, nums) 
+            self.images = original_dataset.train_data[indices==1].unsqueeze(1)
+            self.labels = original_dataset.train_labels[indices==1]
+        
         self.nums = nums
         
     def __len__(self):
@@ -27,11 +35,18 @@ class Reduce(Dataset):
     
     
 class BinaryRatio(Dataset): 
-    def __init__(self, original_dataset, num_classes, target_ratios, nums=(0,1)): # target_ratios is a list   
+    def __init__(self, original_dataset, num_classes, target_ratios, nums=(0,1), CIFAR=False): # target_ratios is a list   
         assert len(target_ratios) == num_classes
 
-        images = original_dataset.train_data
-        labels = original_dataset.train_labels
+        images = None 
+        labels = None 
+
+        if CIFAR:
+            images = torch.from_numpy(original_dataset.data)
+            labels = torch.from_numpy(np.array(original_dataset.targets))
+        else: 
+            images = original_dataset.train_data
+            labels = original_dataset.train_labels
 
 
         class_images = []
