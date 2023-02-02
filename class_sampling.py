@@ -41,17 +41,25 @@ class BinaryRatio(Dataset):
         images = None 
         labels = None 
 
+        images = None 
+        labels = None 
+        
+        class_images = []
+
         if CIFAR:
             images = torch.from_numpy(original_dataset.data)
             labels = torch.from_numpy(np.array(original_dataset.targets))
+            class_images.append(images[(labels == nums[0])]) 
+            class_images.append(images[(labels == nums[1])])
         else: 
             images = original_dataset.train_data
             labels = original_dataset.train_labels
+            class_images.append(images[(labels == nums[0])].unsqueeze(1)) # same shape as labels w/ both classes
+            class_images.append(images[(labels == nums[1])].unsqueeze(1))
 
 
-        class_images = []
-        class_images.append(images[(labels == nums[0])].unsqueeze(1)) # same shape as labels w/ both classes
-        class_images.append(images[(labels == nums[1])].unsqueeze(1))
+
+        
 
 
         class_labels = []
