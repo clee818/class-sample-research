@@ -23,6 +23,7 @@ def run_inference_sigmoid(dataloader, network):
             y_true.extend(target.float())
         loss /= len(dataloader.dataset)
         losses.append(loss)
+    
     return losses, y_preds, y_true
 
 def run_inference_softmax(dataloader, network): 

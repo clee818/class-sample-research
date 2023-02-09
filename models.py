@@ -32,14 +32,12 @@ class SigmoidLogisticRegression(nn.Module):
             self.fc = nn.Linear(shape, 1)
         else: 
             self.fc = nn.Linear(shape, num_classes)
-       # self.sigmoid = nn.Sigmoid()
         self.shape = shape 
 
 
     def forward(self, x):
         x = x.view(-1, self.shape)
         x = self.fc(x)
-       # return self.sigmoid(x)
         return x
 
 
@@ -53,7 +51,6 @@ class SoftmaxLogisticRegression(nn.Module):
     def forward(self, x):
         x = x.view(-1, self.shape)
         x = self.fc(x)
-     #   return F.log_softmax(x)
         return x
 
     
