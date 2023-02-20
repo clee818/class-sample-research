@@ -49,6 +49,7 @@ class SoftmaxLogisticRegression(nn.Module):
         self.shape = shape
 
     def forward(self, x):
+        print(x.shape)
         x = x.view(-1, self.shape)
         x = self.fc(x)
         return x

@@ -6,10 +6,7 @@ class Reduce(Dataset):
     # reduces number of classes
     # takes in original dataset, target # of classes
     def __init__(self, original_dataset, num_classes, nums=(0,1), CIFAR=False):        
-        
-        
-            
-        
+       
         if CIFAR: 
             indices = np.isin(original_dataset.targets, nums) 
             self.images = torch.from_numpy(original_dataset.data[indices==1])
@@ -37,10 +34,7 @@ class Reduce(Dataset):
 class BinaryRatio(Dataset): 
     def __init__(self, original_dataset, num_classes, target_ratios, nums=(0,1), CIFAR=False): # target_ratios is a list   
         assert len(target_ratios) == num_classes
-
-        images = None 
-        labels = None 
-
+        
         images = None 
         labels = None 
         
@@ -121,3 +115,52 @@ def resample(images1, images2, labels1, labels2, target_ratios1, target_ratios2)
 
 
 
+
+class Ratio(Dataset):
+    # try 3 classes
+    # assume all classes are relatively balanced 
+    def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,1,2), CIFAR=True):
+        assert len(target_ratios) == num_classes
+       
+        self.nums=nums
+        
+        indices = np.isin(original_dataset.targets, nums) 
+        
+        targets = np.array(np.asarray(original_dataset.targets)[indices])
+        _, class_counts = np.unique(targets, return_counts=True)
+        
+        max_index = target_ratios.index(max(target_ratios))
+        
+        updated_ratios = tuple(ratio/target_ratios[max_index] for ratio in target_ratios)
+      
+        
+        ratio_class_counts = tuple(int(ratio*class_count) for ratio, class_count in zip(updated_ratios, class_counts))
+        
+        
+        
+        reduced_images = torch.empty(1) 
+        reduced_labels = torch.empty(1)
+        
+        
+       # indices = np.random.choice(labels2.shape[0], n, replace=False)
+        
+        for i, num in enumerate(nums):
+            class_images = torch.from_numpy(targets[targets==num])
+            indices = np.random.choice(class_images.shape[0], ratio_class_counts[i], replace=False)
+            reduced_images = torch.cat((reduced_images, class_images[indices]))
+            reduced_labels = torch.cat((reduced_labels, torch.from_numpy(np.full(ratio_class_counts[i], num))))
+        
+        self.images = reduced_images
+        self.labels = reduced_labels.int()
+                                       
+        
+        
+    def __len__(self):
+        return len(self.labels)
+                 
+    def __getitem__(self, index): 
+        image = self.images[index].float()
+        label = self.nums.index(self.labels[index])
+        return (image, label) 
+        
+        
