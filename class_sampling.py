@@ -32,8 +32,8 @@ class Reduce(Dataset):
     
     
 class BinaryRatio(Dataset): 
-    def __init__(self, original_dataset, num_classes, target_ratios, nums=(0,1), CIFAR=False): # target_ratios is a list   
-        assert len(target_ratios) == num_classes
+    def __init__(self, original_dataset, target_ratios, nums=(0,1), CIFAR=False): # target_ratios is a list   
+        assert len(target_ratios) == 2
         
         images = None 
         labels = None 
@@ -119,39 +119,40 @@ def resample(images1, images2, labels1, labels2, target_ratios1, target_ratios2)
 class Ratio(Dataset):
     # try 3 classes
     # assume all classes are relatively balanced 
-    def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,1,2), CIFAR=True):
+    def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,2,1), CIFAR=True):
         assert len(target_ratios) == num_classes
        
         self.nums=nums
         
-        indices = np.isin(original_dataset.targets, nums) 
+        class_indices = np.isin(original_dataset.targets, nums)
         
-        targets = np.array(np.asarray(original_dataset.targets)[indices])
-        _, class_counts = np.unique(targets, return_counts=True)
+        targets = np.asarray(original_dataset.targets)[class_indices]
+        images = original_dataset.data[class_indices]
+        
+        _, class_counts = np.unique(np.sort(targets), return_counts=True)
         
         max_index = target_ratios.index(max(target_ratios))
         
         updated_ratios = tuple(ratio/target_ratios[max_index] for ratio in target_ratios)
-      
         
         ratio_class_counts = tuple(int(ratio*class_count) for ratio, class_count in zip(updated_ratios, class_counts))
         
+               
+        reduced_images = []
+        reduced_labels = []
         
-        
-        reduced_images = torch.empty(1) 
-        reduced_labels = torch.empty(1)
-        
-        
+      
        # indices = np.random.choice(labels2.shape[0], n, replace=False)
         
         for i, num in enumerate(nums):
-            class_images = torch.from_numpy(targets[targets==num])
+            class_images = torch.from_numpy(images[(targets == num)])
             indices = np.random.choice(class_images.shape[0], ratio_class_counts[i], replace=False)
-            reduced_images = torch.cat((reduced_images, class_images[indices]))
-            reduced_labels = torch.cat((reduced_labels, torch.from_numpy(np.full(ratio_class_counts[i], num))))
+            reduced_images.append(class_images[indices])
+            reduced_labels.append(torch.from_numpy(np.full(ratio_class_counts[i], i)))
         
-        self.images = reduced_images
-        self.labels = reduced_labels.int()
+        self.images = torch.cat(reduced_images)
+        self.labels = torch.cat(reduced_labels).int()
+        
                                        
         
         
@@ -160,7 +161,7 @@ class Ratio(Dataset):
                  
     def __getitem__(self, index): 
         image = self.images[index].float()
-        label = self.nums.index(self.labels[index])
+        label = self.labels[index]
         return (image, label) 
         
         
