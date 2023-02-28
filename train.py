@@ -11,7 +11,7 @@ def train_sigmoid(epoch, train_loader, network, optimizer, directory=None, verbo
    
 
     if class_weights is not None:
-        loss_fn=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([class_weights[0]]))
+        loss_fn=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([class_weights[1]]))
     else: 
         loss_fn=nn.BCEWithLogitsLoss()
     
