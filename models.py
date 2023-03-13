@@ -52,6 +52,3 @@ class SoftmaxLogisticRegression(nn.Module):
         x = x.view(-1, self.shape)
         x = self.fc(x)
         return x
-
-    
-  
