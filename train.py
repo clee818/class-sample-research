@@ -28,18 +28,13 @@ def train_sigmoid(epoch, train_loader, network, optimizer, directory=None, verbo
     return train_counter, train_losses
 
 
-def train_softmax(epoch, train_loader, network, optimizer, directory=None, verbose=True, class_weights=None, loss_fn=nn.CrossEntropyLoss()):
+def train_softmax(epoch, train_loader, network, optimizer, directory=None, verbose=True, loss_fn=nn.CrossEntropyLoss, loss_fn_args={}):
     train_counter = []
     train_losses = []
 
     network.train()
     
-    loss_fn = None
-    
-    if class_weights is not None:
-        loss_fn=nn.CrossEntropyLoss(weight=torch.from_numpy(class_weights).float())
-    else: 
-        loss_fn=nn.CrossEntropyLoss()
+    loss_fn = loss_fn(**loss_fn_args)
     
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()

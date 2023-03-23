@@ -1,6 +1,8 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
+from imblearn.over_sampling import SMOTE  
+
 
 class Reduce(Dataset):
     # reduces number of classes
@@ -117,7 +119,6 @@ def resample(images1, images2, labels1, labels2, target_ratios1, target_ratios2)
 
 
 class Ratio(Dataset):
-    # try 3 classes
     # assume all classes are relatively balanced 
     def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,2,1), CIFAR=True):
         assert len(target_ratios) == num_classes
@@ -163,5 +164,24 @@ class Ratio(Dataset):
         image = self.images[index].float()
         label = self.labels[index]
         return (image, label) 
+    
+    
+class Smote(Dataset): 
+    def __init__(self, ratio_dataset):
         
+        shape = ratio_dataset.images.shape
+                
+        smote = SMOTE()
+        self.images, self.labels = smote.fit_resample(ratio_dataset.images.reshape(shape[0], -1), ratio_dataset.labels)
+        self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
+        self.labels = torch.from_numpy(self.labels)
+       
         
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, index): 
+        image = self.images[index].float()
+        label = self.labels[index]
+        return (image, label)
+     
