@@ -146,7 +146,9 @@ class Ratio(Dataset):
        # indices = np.random.choice(labels2.shape[0], n, replace=False)
         
         for i, num in enumerate(nums):
-            class_images = torch.from_numpy(images[(targets == num)])
+            class_images = images[(targets == num)]
+            if CIFAR: 
+                class_images = torch.from_numpy(class_images)
             indices = np.random.choice(class_images.shape[0], ratio_class_counts[i], replace=False)
             reduced_images.append(class_images[indices])
             reduced_labels.append(torch.from_numpy(np.full(ratio_class_counts[i], i)))
@@ -167,13 +169,16 @@ class Ratio(Dataset):
     
     
 class Smote(Dataset): 
-    def __init__(self, ratio_dataset):
+    def __init__(self, ratio_dataset, CIFAR=True):
         
         shape = ratio_dataset.images.shape
                 
         smote = SMOTE()
         self.images, self.labels = smote.fit_resample(ratio_dataset.images.reshape(shape[0], -1), ratio_dataset.labels)
-        self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
+        if CIFAR:
+            self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
+        else: 
+            self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2]))
         self.labels = torch.from_numpy(self.labels)
        
         

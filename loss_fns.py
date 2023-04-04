@@ -35,8 +35,9 @@ class SoftmaxFocalLoss(nn.Module):
             ((1 - prob) ** self.gamma) * log_prob, 
             target_tensor, 
             weight=self.alpha,
-            reduction = self.reduction
-        )
+            reduction = self.reduction)
+    
+
     """
     def __init__(self, gamma=2., weights=1):
         nn.Module.__init__(self)

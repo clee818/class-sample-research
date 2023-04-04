@@ -22,6 +22,7 @@ def auc_sigmoid(test_loader, network):
 
 def auc_softmax(test_loader, network, average=True):
     test_losses, y_preds, y_true = inference.run_inference_softmax(test_loader, network)
+    
     if average: 
         network_auc = auc(y_preds, y_true)
     else:
@@ -58,6 +59,8 @@ def auc(y_pred, y_true):
     return metrics.roc_auc_score(y_true, y_pred)
 
 def multiclass_auc(y_pred, y_true): 
+    return metric.roc_auc_score(y_true, y_pred, average=False) 
+    """
     # computes aucs for all class combinations 
     # number of aucs: num_classes * (num_classes - 1)
     # final shape: num_classes, num_classes where index corresponds to class 
@@ -72,7 +75,7 @@ def multiclass_auc(y_pred, y_true):
             except ValueError:
                 pass
     return aucs
-   
+   """
             
         
 
