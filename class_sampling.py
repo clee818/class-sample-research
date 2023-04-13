@@ -169,12 +169,17 @@ class Ratio(Dataset):
     
     
 class Smote(Dataset): 
-    def __init__(self, ratio_dataset, CIFAR=True):
+    def __init__(self, ratio_dataset, target_shape, CIFAR=True):
         
         shape = ratio_dataset.images.shape
                 
         smote = SMOTE()
+        
         self.images, self.labels = smote.fit_resample(ratio_dataset.images.reshape(shape[0], -1), ratio_dataset.labels)
+        
+        self.smote_labels = np.zeros(target_shape)
+        self.smote_labels[shape[0]:] = 1
+        
         if CIFAR:
             self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
         else: 
@@ -188,5 +193,7 @@ class Smote(Dataset):
     def __getitem__(self, index): 
         image = self.images[index].float()
         label = self.labels[index]
+        smote_label = self.smote_labels[index]
         return (image, label)
+       #  return (image, (label, smote_label))
      

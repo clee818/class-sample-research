@@ -10,7 +10,10 @@ class ConvNet(nn.Module):
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(250, 50) #(320, 50)
-        self.fc2 = nn.Linear(50, 1)
+        if (num_classes == 2): 
+            self.fc2 = nn.Linear(50, 1)
+        else:
+            self.fc2 = nn.Linear(50, num_classes)
 
     def forward(self, x):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
