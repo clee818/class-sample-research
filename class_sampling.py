@@ -194,6 +194,5 @@ class Smote(Dataset):
         image = self.images[index].float()
         label = self.labels[index]
         smote_label = self.smote_labels[index]
-        return (image, label)
-       #  return (image, (label, smote_label))
+        return (image, (label, smote_label))
      

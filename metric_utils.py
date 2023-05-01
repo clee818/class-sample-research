@@ -11,8 +11,12 @@ import torch.nn as nn
 import inference
     
 
-def auc_sigmoid(test_loader, network):
-    test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network)
+def auc_sigmoid(test_loader, network, embeddings=False):
+    if embeddings:
+        test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, embeddings=True)
+    else:
+        test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, embeddings=False)
+        
     network_auc = auc(y_preds, y_true)
     
     print(f'\nTest set: Avg. loss: {test_losses[-1]}, AUC: {network_auc}\n')   

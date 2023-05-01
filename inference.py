@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-def run_inference_sigmoid(dataloader, network):  
+def run_inference_sigmoid(dataloader, network, embeddings=False):  
     losses = []
     y_preds = []
     unbinarized_preds = []
@@ -17,6 +17,8 @@ def run_inference_sigmoid(dataloader, network):
     with torch.no_grad():
         for data, target in dataloader:
             output = network(data)
+            if embeddings: 
+                output = output[0]
             loss += loss_fn(output.squeeze().float(), target.float()).item()
             pred=torch.sigmoid(output.data)
             y_preds.extend(pred.float())

@@ -12,12 +12,12 @@ class SigmoidFocalLoss(nn.Module):
     def __init__(self, weight=None, 
                  gamma=2., reduction='none'):
         nn.Module.__init__(self)
-       # self.weight = weight
+        self.weight = weight
         self.gamma = gamma
         self.reduction = reduction
         
     def forward(self, inputs, targets):
-        return torchvision.ops.sigmoid_focal_loss(inputs, targets, gamma=self.gamma, reduction=self.reduction)
+        return torchvision.ops.sigmoid_focal_loss(inputs * self.weight, targets, gamma=self.gamma, reduction=self.reduction)
     
 
 class SoftmaxFocalLoss(nn.Module): 
@@ -38,18 +38,34 @@ class SoftmaxFocalLoss(nn.Module):
             reduction = self.reduction)
     
 class CappedBCELoss(nn.Module):
-    def __init__(self, smote_labels=None, loss_cap=1e-3, reduction='none'):
+    def __init__(self, loss_cap=None, reduction='mean'):
         nn.Module.__init__(self)
         self.loss_cap = loss_cap
-        self.smote_labels = smote_labels
         self.reduction = reduction
+        
         
     def forward(self, inputs, targets):
         # BCE with logits (sigmoid --> nll) --> reduction 
-        loss = F.binary_cross_entropy_with_logits(input, targets)
-        capped_loss = np.maximum(loss[self.smote_labels == 1], self.loss_cap, reduction=self.reduction)
-       # indices = np.where(self.smote_labels == 1)[0]
-        #np.where(loss[indices]
-        return F.sigmoid(loss) 
+        loss = F.binary_cross_entropy_with_logits(inputs, targets[0], reduction='none')
+        if self.loss_cap:
+            loss[targets[1] == 1] = torch.minimum(loss[targets[1] == 1], torch.tensor(self.loss_cap))
+        if self.reduction=='mean':
+            return torch.mean(loss)
+        return loss
+
+    
+class CappedCELoss(nn.Module):
+    def __init__(self, loss_cap=500, reduction='mean'):
+        nn.Module.__init__(self)
+        self.loss_cap = loss_cap
+        self.reduction = reduction
+        
+        
+    def forward(self, inputs, targets):
+        loss = F.cross_entropy(inputs, targets[0], reduction='none')
+        loss[targets[1] == 1] = torch.minimum(loss[targets[1] == 1], torch.tensor(self.loss_cap))
+        if self.reduction=='mean':
+            return torch.mean(loss)
+        return loss
                 
         
