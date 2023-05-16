@@ -55,7 +55,7 @@ class CappedBCELoss(nn.Module):
 
     
 class CappedCELoss(nn.Module):
-    def __init__(self, loss_cap=500, reduction='mean'):
+    def __init__(self, loss_cap=None, reduction='mean'):
         nn.Module.__init__(self)
         self.loss_cap = loss_cap
         self.reduction = reduction
@@ -63,9 +63,28 @@ class CappedCELoss(nn.Module):
         
     def forward(self, inputs, targets):
         loss = F.cross_entropy(inputs, targets[0], reduction='none')
-        loss[targets[1] == 1] = torch.minimum(loss[targets[1] == 1], torch.tensor(self.loss_cap))
+        if self.loss_cap:
+            loss[targets[1] == 1] = torch.minimum(loss[targets[1] == 1], torch.tensor(self.loss_cap))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
+    
+class TripletLoss(nn.Module):
+    def __init__(self, margin=1.0, reduction='mean'):
+        super(TripletLoss, self).__init__()
+        self.margin = margin
+        self.reduction = reduction
+        
+    def euclidean_distance(self, x1, x2):
+        return (x1 - x2).pow(2).sum(1)
+    
+    def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
+        distance_positive = self.euclidean_distance(anchor, positive)
+        distance_negative = self.euclidean_distance(anchor, negative)
+        losses = torch.relu(distance_positive - distance_negative + self.margin)
+
+        if self.reduction == 'mean':
+            return losses.mean()
+        return losses
                 
         

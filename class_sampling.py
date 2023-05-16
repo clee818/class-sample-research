@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from imblearn.over_sampling import SMOTE  
-
+import random
 
 class Reduce(Dataset):
     # reduces number of classes
@@ -194,5 +194,33 @@ class Smote(Dataset):
         image = self.images[index].float()
         label = self.labels[index]
         smote_label = self.smote_labels[index]
-        return (image, (label, smote_label))
-     
+        return (image, label, smote_label)
+
+    
+    
+class ForTripletLoss(Dataset): 
+    def __init__(self, smote_dataset, CIFAR=True):
+        self.images = smote_dataset.images 
+        self.labels = smote_dataset.labels
+        self.smote_labels = smote_dataset.smote_labels
+            
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, index):
+        anchor_image = self.images[index]
+        anchor_label = self.labels[index]
+        anchor_smote_label = self.smote_labels[index] 
+
+        pos_images = self.images[self.labels==anchor_label]
+        pos_image = random.choice(pos_images)
+
+        if anchor_label == 0: 
+            neg_label = 1
+        else:
+            neg_label = 0
+
+        neg_images = self.images[self.labels==neg_label]
+        neg_image = random.choice(neg_images)
+
+        return (anchor_image, pos_image, neg_image, anchor_label)
