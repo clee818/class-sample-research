@@ -199,10 +199,12 @@ class Smote(Dataset):
     
     
 class ForTripletLoss(Dataset): 
-    def __init__(self, smote_dataset, CIFAR=True):
+    def __init__(self, smote_dataset, smote=True):
         self.images = smote_dataset.images 
         self.labels = smote_dataset.labels
-        self.smote_labels = smote_dataset.smote_labels
+        self.smote = smote 
+        if smote: 
+            self.smote_labels = smote_dataset.smote_labels
             
     def __len__(self):
         return len(self.labels)
@@ -210,7 +212,8 @@ class ForTripletLoss(Dataset):
     def __getitem__(self, index):
         anchor_image = self.images[index]
         anchor_label = self.labels[index]
-        anchor_smote_label = self.smote_labels[index] 
+        if self.smote: 
+            anchor_smote_label = self.smote_labels[index] 
 
         pos_images = self.images[self.labels==anchor_label]
         pos_image = random.choice(pos_images)
