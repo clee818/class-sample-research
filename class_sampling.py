@@ -178,7 +178,7 @@ class Smote(Dataset):
         self.images, self.labels = smote.fit_resample(ratio_dataset.images.reshape(shape[0], -1), ratio_dataset.labels)
         
         self.smote_labels = np.zeros(target_shape)
-        self.smote_labels[shape[0]:] = 1
+        self.smote_labels[shape[0]:] = 1 # 0 = not smote, 1 = smote
         
         if CIFAR:
             self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
@@ -199,7 +199,7 @@ class Smote(Dataset):
     
     
 class ForTripletLoss(Dataset): 
-    def __init__(self, smote_dataset, smote=True):
+    def __init__(self, smote_dataset, smote=False):
         self.images = smote_dataset.images 
         self.labels = smote_dataset.labels
         self.smote = smote 
@@ -212,18 +212,26 @@ class ForTripletLoss(Dataset):
     def __getitem__(self, index):
         anchor_image = self.images[index]
         anchor_label = self.labels[index]
-        if self.smote: 
-            anchor_smote_label = self.smote_labels[index] 
-
-        pos_images = self.images[self.labels==anchor_label]
-        pos_image = random.choice(pos_images)
 
         if anchor_label == 0: 
             neg_label = 1
         else:
             neg_label = 0
+            
+        if self.smote: 
+            anchor_smote_label = self.smote_labels[index] 
+            # EDIT THIS
+            pos_images = self.images[self.labels==anchor_label and self.smote_labels==False] 
+            neg_images = self.images[self.labels==neg_label and self.smote_labels==False]
 
-        neg_images = self.images[self.labels==neg_label]
+        else:
+            pos_images = self.images[self.labels==anchor_label]
+            neg_images = self.images[self.labels==neg_label]
+        
+        pos_image = random.choice(pos_images)
         neg_image = random.choice(neg_images)
-
-        return (anchor_image, pos_image, neg_image, anchor_label)
+        
+        if self.smote: 
+            return (anchor_image, pos_image, neg_image, anchor_label, anchor_smote_label)
+        else:
+            return (anchor_image, pos_image, neg_image, anchor_label)

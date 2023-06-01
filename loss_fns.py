@@ -44,14 +44,32 @@ class CappedBCELoss(nn.Module):
         self.reduction = reduction
         
         
-    def forward(self, inputs, targets):
+    def forward(self, inputs, targets, smote_targets):
         # BCE with logits (sigmoid --> nll) --> reduction 
-        loss = F.binary_cross_entropy_with_logits(inputs, targets[0], reduction='none')
+        # caps smote examples 
+        loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
         if self.loss_cap:
-            loss[targets[1] == 1] = torch.minimum(loss[targets[1] == 1], torch.tensor(self.loss_cap))
+            loss[smote_targets == 1] = torch.minimum(loss[smote_targets == 1], torch.tensor(self.loss_cap))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
+    
+class AllCappedBCELoss(nn.Module):
+    def __init__(self, loss_cap=None, reduction='mean'):
+        nn.Module.__init__(self)
+        self.loss_cap = loss_cap
+        self.reduction = reduction
+        
+        
+    def forward(self, inputs, targets, smote_targets):
+        # same as CappedBCELoss but caps all examples 
+        loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        if self.loss_cap:
+            loss = torch.minimum(loss, torch.tensor(self.loss_cap))
+        if self.reduction=='mean':
+            return torch.mean(loss)
+        return loss
+    
 
     
 class CappedCELoss(nn.Module):
@@ -70,7 +88,7 @@ class CappedCELoss(nn.Module):
         return loss
     
 class TripletLoss(nn.Module):
-    def __init__(self, margin=1.0, reduction='mean'):
+    def __init__(self, margin=0.3, reduction='mean'):
         super(TripletLoss, self).__init__()
         self.margin = margin
         self.reduction = reduction
@@ -81,10 +99,13 @@ class TripletLoss(nn.Module):
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.euclidean_distance(anchor, positive)
         distance_negative = self.euclidean_distance(anchor, negative)
-        losses = torch.relu(distance_positive - distance_negative + self.margin)
-
         if self.reduction == 'mean':
-            return losses.mean()
+            distance_positive = distance_positive.mean()
+            distance_negative = distance_negative.mean()
+        losses = torch.relu(distance_positive - distance_negative + self.margin)
+        
+       # if self.reduction == 'mean':
+       #     return losses.mean()
         return losses
                 
         
