@@ -51,7 +51,7 @@ def train_sigmoid_with_smote(epoch, train_loader, network, optimizer,
     for batch_idx, (data, target, smote_label) in enumerate(train_loader):
         optimizer.zero_grad()
         output = network(data)
-        loss = loss_fn(output.squeeze().float(), target, smote_label)
+        loss = loss_fn(output.squeeze().float(), target.float(), smote_label)
         pred = output.data
         loss.backward()
         optimizer.step()
