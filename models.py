@@ -61,7 +61,6 @@ class ConvNetOnlyEmbeddings(nn.Module):
         return embed
 
 class ConvNetLinearProbe(nn.Module): 
-    
     def __init__(self, num_classes):
         super(ConvNetLinearProbe, self).__init__()
         if (num_classes == 2): 
@@ -82,9 +81,9 @@ class CompleteConvNet(nn.Module):
         self.linear_probe = linear_probe
         
     def forward(self, x): 
-        x = self.embed_network(x)
-        x = self.linear_probe(x) 
-        return x
+        embeds = self.embed_network(x)
+        out = self.linear_probe(embeds) 
+        return out, embeds
     
     
 class SigmoidLogisticRegression(nn.Module):

@@ -265,7 +265,6 @@ def train_triplet_loss(epoch, train_loader, network, optimizer, directory=None,
 def train_linear_probe(epoch, train_loader, network,
                        optimizer, directory=None, verbose=True,
                        loss_fn=nn.BCEWithLogitsLoss, loss_fn_args={}):
-    # Make sure training correct things - entire network 
     
     train_counter = []
     train_losses = []
@@ -275,7 +274,7 @@ def train_linear_probe(epoch, train_loader, network,
     network.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()  
-        output = network(data)
+        output, _ = network(data)
         loss = loss_fn(output.squeeze().float(), target.float())
         pred = output.data
         loss.backward()

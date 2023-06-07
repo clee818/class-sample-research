@@ -205,7 +205,9 @@ class ForTripletLoss(Dataset):
         self.smote = smote 
         if smote: 
             self.smote_labels = smote_dataset.smote_labels
-            
+        # might want to set all smote labels to be false if not using smote 
+        
+         
     def __len__(self):
         return len(self.labels)
     
@@ -213,16 +215,15 @@ class ForTripletLoss(Dataset):
         anchor_image = self.images[index]
         anchor_label = self.labels[index]
 
-        if anchor_label == 0: 
-            neg_label = 1
-        else:
-            neg_label = 0
+        neg_label = 1 - anchor_label
             
         if self.smote: 
-            anchor_smote_label = self.smote_labels[index] 
-            # EDIT THIS
-            pos_images = self.images[self.labels==anchor_label and self.smote_labels==False] 
-            neg_images = self.images[self.labels==neg_label and self.smote_labels==False]
+        #    anchor_smote_label = self.smote_labels[index] 
+            # IS THIS CORRECT - CHECK
+            smote_mask = np.zeros_like(self.labels)
+            smote_mask[self.smote_labels==False] += 1
+            pos_images = self.images[smote_mask[self.labels==anchor_label]]
+            neg_images = self.images[smote_mask[self.labels==neg_label]]
 
         else:
             pos_images = self.images[self.labels==anchor_label]
@@ -231,7 +232,7 @@ class ForTripletLoss(Dataset):
         pos_image = random.choice(pos_images)
         neg_image = random.choice(neg_images)
         
-        if self.smote: 
-            return (anchor_image, pos_image, neg_image, anchor_label, anchor_smote_label)
-        else:
-            return (anchor_image, pos_image, neg_image, anchor_label)
+       # if self.smote: 
+       #     return (anchor_image, pos_image, neg_image, anchor_label, anchor_smote_label)
+       # else:
+        return (anchor_image, pos_image, neg_image, anchor_label)
