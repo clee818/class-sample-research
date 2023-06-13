@@ -48,8 +48,9 @@ class CappedBCELoss(nn.Module):
         # BCE with logits (sigmoid --> nll) --> reduction 
         # caps smote examples 
         loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
-        if self.loss_cap:
-            loss[smote_targets == 1] = torch.minimum(loss[smote_targets == 1], torch.tensor(self.loss_cap))
+        if self.loss_cap != None:
+            loss[smote_targets == 1] = torch.minimum(loss[smote_targets == 1], torch.tensor(self.loss_cap)[smote_targets==1])
+          #  loss[smote_targets == 1] = torch.minimum(loss[smote_targets == 1], torch.tensor(self.loss_cap))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
@@ -103,9 +104,4 @@ class TripletLoss(nn.Module):
             distance_positive = distance_positive.mean()
             distance_negative = distance_negative.mean()
         losses = torch.relu(distance_positive - distance_negative + self.margin)
-        
-       # if self.reduction == 'mean':
-       #     return losses.mean()
         return losses
-                
-        

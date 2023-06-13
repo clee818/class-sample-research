@@ -128,10 +128,10 @@ def train_sigmoid_euclidean_distance(epoch, train_loader, network, optimizer,
 
         if (batch_idx > 5):
             dist = euclidean_distance(embeds, target, smote_target)
-            loss_fn_args['loss_cap'] == 10 / torch.exp(
+            loss_fn_args['loss_cap'] = 10 / torch.exp(
                 dist / 15)  # big distance = small cap
             loss_func = loss_fn(**loss_fn_args)
-            loss_fn_args['loss_cap'] == None
+            loss_fn_args['loss_cap'] = None
 
         loss = loss_func(output.squeeze().float(), target.float(), smote_target)
         pred = output.data
@@ -188,9 +188,9 @@ def train_sigmoid_cosine_distance(epoch, train_loader, network, optimizer,
 
         if (batch_idx > 5):
             dist = cosine_distance(embeds, target, smote_target)
-            loss_fn_args['loss_cap'] == 1 / dist
+            loss_fn_args['loss_cap'] = (1 / dist) * 5 
             loss_func = loss_fn(**loss_fn_args)
-            loss_fn_args['loss_cap'] == None
+            loss_fn_args['loss_cap'] = None
 
         loss = loss_func(output.squeeze().float(), target.float(), smote_target)
         pred = output.data
@@ -234,6 +234,7 @@ def train_triplet_loss(epoch, train_loader, network, optimizer, directory=None,
     train_losses = []
 
     loss_fn = loss_fns.TripletLoss(**loss_fn_args)
+   
 
     network.train()
     for batch_idx, (anchor_data, pos_data, neg_data, target) in enumerate(
@@ -287,6 +288,47 @@ def train_linear_probe(epoch, train_loader, network,
                                                                          len(train_loader.dataset),
                                                                          100. * batch_idx /
                                                                          len(train_loader),
+                                                                         loss.item()))
+        train_losses.append(loss.item())
+        train_counter.append(
+            (batch_idx * 64) + ((epoch) * len(train_loader.dataset)))
+    if directory:
+        torch.save(network.state_dict(), directory)
+    return train_counter, train_losses
+
+
+def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory=None,
+                       verbose=True, loss_fn=loss_fns.CappedBCELoss, loss_fn_args={}):
+    train_counter = []
+    train_losses = []
+
+    cap_calc = loss_fns.TripletLoss(reduction='none')
+    loss_func = loss_fn(**loss_fn_args)
+
+
+    network.train()
+    for batch_idx, (anchor_data, pos_data, neg_data, target, smote_target) in enumerate(
+            train_loader):
+        optimizer.zero_grad()
+        anchor_output, anchor_embeds = network(anchor_data.float())
+        _, pos_embeds = network(pos_data.float())
+        _, neg_embeds = network(neg_data.float())
+        if (batch_idx > 5):
+            cap = cap_calc(anchor_embeds, pos_embeds, neg_embeds)
+            loss_fn_args['loss_cap'] = 1 / cap
+            loss_func = loss_fn(**loss_fn_args)
+            loss_fn_args['loss_cap'] = None
+        loss = loss_func(anchor_output.squeeze(), target.float(), smote_target)
+        loss.backward()
+        optimizer.step()
+        if batch_idx % LOG_INTERVAL == 0 and verbose:
+            print(
+                'Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch,
+                                                                         batch_idx * len(
+                                                                             anchor_data),
+                                                                         len(train_loader.dataset),
+                                                                         100. * batch_idx / len(
+                                                                             train_loader),
                                                                          loss.item()))
         train_losses.append(loss.item())
         train_counter.append(
