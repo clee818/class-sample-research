@@ -167,7 +167,11 @@ class Ratio(Dataset):
         label = self.labels[index]
         return (image, label) 
     
-    
+
+NO_SMOTE_LABEL = 0
+SMOTE_LABEL = 1
+
+
 class Smote(Dataset): 
     def __init__(self, ratio_dataset, target_shape, CIFAR=True):
         
@@ -178,7 +182,7 @@ class Smote(Dataset):
         self.images, self.labels = smote.fit_resample(ratio_dataset.images.reshape(shape[0], -1), ratio_dataset.labels)
         
         self.smote_labels = np.zeros(target_shape)
-        self.smote_labels[shape[0]:] = 1 # 0 = not smote, 1 = smote
+        self.smote_labels[shape[0]:] = SMOTE_LABEL 
         
         if CIFAR:
             self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
@@ -199,13 +203,28 @@ class Smote(Dataset):
     
     
 class ForTripletLoss(Dataset): 
-    def __init__(self, smote_dataset, smote=False):
-        self.images = smote_dataset.images 
-        self.labels = smote_dataset.labels
+    def __init__(self, dataset, smote=False):
+        self.images = dataset.images 
+        self.labels = dataset.labels
         self.smote = smote 
+       
         if smote: 
-            self.smote_labels = smote_dataset.smote_labels
-        # might want to set all smote labels to be false if not using smote 
+            self.smote_labels = dataset.smote_labels
+            class0_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
+            class1_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
+            
+            class0_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
+            class1_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
+            
+            class0_smote_mask[self.labels!=0] = False
+            class1_smote_mask[self.labels!=1] = False
+            
+            self.class0_images = self.images[class0_smote_mask]
+            self.class1_images = self.images[class1_smote_mask]
+            
+        else:
+            self.class0_images = self.images[self.labels==0]
+            self.class1_images = self.images[self.labels==1]
         
          
     def __len__(self):
@@ -214,31 +233,15 @@ class ForTripletLoss(Dataset):
     def __getitem__(self, index):
         anchor_image = self.images[index]
         anchor_label = self.labels[index]
-
-        neg_label = 1 - anchor_label
-            
-        if self.smote: 
-            # IS THIS CORRECT - CHECK
-            anchor_smote_label = self.smote_labels[index] 
-            pos_smote_mask = np.zeros_like(self.labels)
-            neg_smote_mask = np.zeros_like(self.labels)
-            
-            pos_smote_mask[self.smote_labels==0] = 1
-            neg_smote_mask[self.smote_labels==0] = 1
-            
-            pos_smote_mask[self.labels!=anchor_label] = 0
-            neg_smote_mask[self.labels!=neg_label] = 0
-            
-            pos_images = self.images[pos_smote_mask]
-            neg_images = self.images[neg_smote_mask]
-
+        
+        if anchor_label == 0:
+            pos_image = random.choice(self.class0_images)
+            neg_image = random.choice(self.class1_images)
         else:
-            pos_images = self.images[self.labels==anchor_label]
-            neg_images = self.images[self.labels==neg_label]
-        
-        pos_image = random.choice(pos_images)
-        neg_image = random.choice(neg_images)
+            pos_image = random.choice(self.class1_images)
+            neg_image = random.choice(self.class0_images)
         
         if self.smote: 
+            anchor_smote_label = self.smote_labels[index]
             return (anchor_image, pos_image, neg_image, anchor_label, anchor_smote_label)
         return (anchor_image, pos_image, neg_image, anchor_label)

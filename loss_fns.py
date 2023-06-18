@@ -7,6 +7,7 @@ import torchvision.ops
 
 # from https://discuss.pytorch.org/t/is-this-a-correct-implementation-for-focal-loss-in-pytorch/43327/8
 
+SMOTE_LABEL = 1
 
 class SigmoidFocalLoss(nn.Module):
     def __init__(self, weight=None, 
@@ -49,8 +50,8 @@ class CappedBCELoss(nn.Module):
         # caps smote examples 
         loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
         if self.loss_cap != None:
-            loss[smote_targets == 1] = torch.minimum(loss[smote_targets == 1], torch.tensor(self.loss_cap)[smote_targets==1])
-          #  loss[smote_targets == 1] = torch.minimum(loss[smote_targets == 1], torch.tensor(self.loss_cap))
+            loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(self.loss_cap)[smote_targets==SMOTE_LABEL])
+              #  loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(self.loss_cap))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
@@ -83,11 +84,12 @@ class CappedCELoss(nn.Module):
     def forward(self, inputs, targets):
         loss = F.cross_entropy(inputs, targets[0], reduction='none')
         if self.loss_cap:
-            loss[targets[1] == 1] = torch.minimum(loss[targets[1] == 1], torch.tensor(self.loss_cap))
+            loss[targets[1] == SMOTE_LABEL] = torch.minimum(loss[targets[1] == SMOTE_LABEL], torch.tensor(self.loss_cap))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
     
+
 class TripletLoss(nn.Module):
     def __init__(self, margin=0.3, reduction='mean'):
         super(TripletLoss, self).__init__()

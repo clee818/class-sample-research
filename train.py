@@ -131,8 +131,7 @@ def train_sigmoid_euclidean_distance(epoch, train_loader, network, optimizer,
             loss_fn_args['loss_cap'] = 10 / torch.exp(
                 dist / 15)  # big distance = small cap
             loss_func = loss_fn(**loss_fn_args)
-            loss_fn_args['loss_cap'] = None
-
+            loss_fn_args['loss_cap'] = None 
         loss = loss_func(output.squeeze().float(), target.float(), smote_target)
         pred = output.data
         loss.backward()
@@ -190,8 +189,7 @@ def train_sigmoid_cosine_distance(epoch, train_loader, network, optimizer,
             dist = cosine_distance(embeds, target, smote_target)
             loss_fn_args['loss_cap'] = (1 / dist) * 5 
             loss_func = loss_fn(**loss_fn_args)
-            loss_fn_args['loss_cap'] = None
-
+            loss_fn_args['loss_cap'] = None 
         loss = loss_func(output.squeeze().float(), target.float(), smote_target)
         pred = output.data
         loss.backward()
@@ -296,6 +294,7 @@ def train_linear_probe(epoch, train_loader, network,
         torch.save(network.state_dict(), directory)
     return train_counter, train_losses
 
+import matplotlib.pyplot as plt
 
 def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory=None,
                        verbose=True, loss_fn=loss_fns.CappedBCELoss, loss_fn_args={}):
@@ -311,13 +310,22 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
             train_loader):
         optimizer.zero_grad()
         anchor_output, anchor_embeds = network(anchor_data.float())
-        _, pos_embeds = network(pos_data.float())
-        _, neg_embeds = network(neg_data.float())
         if (batch_idx > 5):
+            _, pos_embeds = network(pos_data.float())
+            _, neg_embeds = network(neg_data.float())
             cap = cap_calc(anchor_embeds, pos_embeds, neg_embeds)
+            for i in range(len(cap)):
+                if cap[i] == 0.3:
+                    print(pos_data[i] - neg_data[i])
+                    print(cap[i])
+                    plt.subplot(2,3,1)
+                    plt.imshow(pos_data[i].reshape(32, 32, 3).int())
+                    plt.subplot(2,3,2)
+                    plt.imshow(neg_data[i].reshape(32, 32, 3).int())
+                    plt.show()
             loss_fn_args['loss_cap'] = 1 / cap
             loss_func = loss_fn(**loss_fn_args)
-            loss_fn_args['loss_cap'] = None
+            loss_fn_args['loss_cap'] = None 
         loss = loss_func(anchor_output.squeeze(), target.float(), smote_target)
         loss.backward()
         optimizer.step()
