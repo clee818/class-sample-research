@@ -106,4 +106,4 @@ class TripletLoss(nn.Module):
             distance_positive = distance_positive.mean()
             distance_negative = distance_negative.mean()
         losses = torch.relu(distance_positive - distance_negative + self.margin)
-        return losses
+        return losses, distance_positive, distance_negative

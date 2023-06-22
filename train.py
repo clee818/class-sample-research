@@ -304,7 +304,9 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
     cap_calc = loss_fns.TripletLoss(reduction='none')
     loss_func = loss_fn(**loss_fn_args)
 
-
+    same_count = 0
+    diff_count = 0
+    
     network.train()
     for batch_idx, (anchor_data, pos_data, neg_data, target, smote_target) in enumerate(
             train_loader):
@@ -313,16 +315,14 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
         if (batch_idx > 5):
             _, pos_embeds = network(pos_data.float())
             _, neg_embeds = network(neg_data.float())
-            cap = cap_calc(anchor_embeds, pos_embeds, neg_embeds)
+            cap, distance_positive, distance_negative = cap_calc(anchor_embeds, pos_embeds, neg_embeds)
+
             for i in range(len(cap)):
-                if cap[i] == 0.3:
-                    print(pos_data[i] - neg_data[i])
-                    print(cap[i])
-                    plt.subplot(2,3,1)
-                    plt.imshow(pos_data[i].reshape(32, 32, 3).int())
-                    plt.subplot(2,3,2)
-                    plt.imshow(neg_data[i].reshape(32, 32, 3).int())
-                    plt.show()
+                if distance_positive[i] == distance_negative[i]:
+                    same_count+=1 
+                else:
+                    diff_count += 1
+
             loss_fn_args['loss_cap'] = 1 / cap
             loss_func = loss_fn(**loss_fn_args)
             loss_fn_args['loss_cap'] = None 
@@ -343,6 +343,8 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
             (batch_idx * 64) + ((epoch) * len(train_loader.dataset)))
     if directory:
         torch.save(network.state_dict(), directory)
+    
+    print(same_count / (same_count + diff_count))
     return train_counter, train_losses
 
 

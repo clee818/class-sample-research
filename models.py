@@ -8,16 +8,17 @@ class ConvNet(nn.Module):
         super(ConvNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
+        self.conv1_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(250, 50) #(250, 128) 
         if (num_classes == 2): 
             self.fc2 = nn.Linear(50, 1) 
         else:
             self.fc2 = nn.Linear(50, num_classes)
+            
 
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv2(x), 2))
         x = x.view(-1, 250) 
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
@@ -29,19 +30,20 @@ class ConvNetWithEmbeddings(nn.Module):
         super(ConvNetWithEmbeddings, self).__init__()
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
+        self.conv1_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(250, 128)
         if (num_classes == 2): 
             self.fc2 = nn.Linear(128, 1) 
         else:
             self.fc2 = nn.Linear(128, num_classes)
 
+
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
+        x = F.relu(F.max_pool2d((self.conv2(x)), 2))
         x = x.view(-1, 250) 
-        embed = F.relu(self.fc1(x))
-        x = F.dropout(embed, training=self.training)
+        embed = self.fc1(x)
+        x = F.relu(F.dropout(embed, training=self.training))
         x = self.fc2(x)
         return x, embed
     
@@ -50,12 +52,12 @@ class ConvNetOnlyEmbeddings(nn.Module):
         super(ConvNetOnlyEmbeddings, self).__init__()
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
+        self.conv1_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(250, 128)
 
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv2(x), 2))
         x = x.view(-1, 250) 
         embed = F.relu(self.fc1(x))
         return embed
@@ -67,6 +69,8 @@ class ConvNetLinearProbe(nn.Module):
             self.fc2 = nn.Linear(128, 1) 
         else:
             self.fc2 = nn.Linear(128, num_classes)
+            
+        nn.init.kaiming_normal_(self.fc2.weight)
 
     def forward(self, embed):
         x = F.dropout(embed, training=self.training)
