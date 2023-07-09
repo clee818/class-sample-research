@@ -5,7 +5,7 @@ import torch.nn as nn
 def run_inference_sigmoid(dataloader, network, embeddings=False):  
     losses = []
     y_preds = []
-    unbinarized_preds = []
+  #  unbinarized_preds = []
     y_true = []
     
     network.eval()
@@ -28,10 +28,10 @@ def run_inference_sigmoid(dataloader, network, embeddings=False):
     
     return losses, y_preds, y_true
 
-def run_inference_softmax(dataloader, network): 
+def run_inference_softmax(dataloader, network, embeddings=False): 
     losses = []
     y_preds = []
-    unbinarized_preds = []
+  #  unbinarized_preds = []
     y_true = []
     
     network.eval()
@@ -43,6 +43,8 @@ def run_inference_softmax(dataloader, network):
     with torch.no_grad():
         for data, target in dataloader:
             output = network(data)
+            if embeddings: 
+                output = output[0]
             loss += loss_fn(output.squeeze(), target).item()
             pred = output.data.max(1, keepdim=True)[1]
             y_preds.extend(pred)

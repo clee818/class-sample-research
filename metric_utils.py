@@ -12,10 +12,8 @@ import inference
     
 
 def auc_sigmoid(test_loader, network, embeddings=False):
-    if embeddings:
-        test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, embeddings=True)
-    else:
-        test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, embeddings=False)
+    
+    test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, embeddings=embeddings)
         
     network_auc = auc(y_preds, y_true)
     
@@ -24,8 +22,8 @@ def auc_sigmoid(test_loader, network, embeddings=False):
     return test_losses, network_auc
 
 
-def auc_softmax(test_loader, network, average=True):
-    test_losses, y_preds, y_true = inference.run_inference_softmax(test_loader, network)
+def auc_softmax(test_loader, network, average=True, embeddings=False):
+    test_losses, y_preds, y_true = inference.run_inference_softmax(test_loader, network, embeddings=embeddings)
     
     if average: 
         network_auc = auc(y_preds, y_true)
