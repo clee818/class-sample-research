@@ -28,8 +28,10 @@ class Reduce(Dataset):
         image = self.images[index].float()
         if self.labels[index]==self.nums[0]:
             label = 0
-        else:
+        elif self.labels[index]==self.nums[1]:
             label = 1
+        else: # nums[2] if it exists
+            label = 2
         if self.transform:
             image = self.transform(image)
         return (image, label)
@@ -129,7 +131,7 @@ class Smote(Dataset):
     
     
 class ForTripletLoss(Dataset): 
-    def __init__(self, dataset, smote=False, transform=None):
+    def __init__(self, dataset, smote=False, num_classes=2, transform=None):
         self.images = dataset.images.float()
         self.labels = dataset.labels
         self.smote = smote 
@@ -148,6 +150,12 @@ class ForTripletLoss(Dataset):
             self.class0_images = self.images[class0_smote_mask]
             self.class1_images = self.images[class1_smote_mask]
             
+            if num_classes == 3:
+                class2_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
+                class2_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
+                class2_smote_mask[self.labels!=2] = False
+                self.class2_images = self.images[class2_smote_mask]
+            
         else:
             self.class0_images = self.images[self.labels==0]
             self.class1_images = self.images[self.labels==1]
@@ -161,13 +169,25 @@ class ForTripletLoss(Dataset):
     def __getitem__(self, index):
         anchor_image = self.images[index]
         anchor_label = self.labels[index]
-        
-        if anchor_label == 0:
-            pos_image = random.choice(self.class0_images)
-            neg_image = random.choice(self.class1_images)
-        else:
-            pos_image = random.choice(self.class1_images)
-            neg_image = random.choice(self.class0_images)
+       
+        if num_classes==2:
+            if anchor_label == 0:
+                pos_image = random.choice(self.class0_images)
+                neg_image = random.choice(self.class1_images)
+            else:
+                pos_image = random.choice(self.class1_images)
+                neg_image = random.choice(self.class0_images)
+        elif num_classes == 3:
+            if anchor_label == 0:
+                pos_image = random.choice(self.class0_images)
+                neg_image = random.choice(np.concat(self.class1_images, self.class2_images))
+            elif anchor_label == 1:
+                pos_image = random.choice(self.class1_images)
+                neg_image = random.choice(np.concat(self.class0_images, self.class2_images))
+            else:
+                pos_image = random.choice(self.class2_images)
+                neg_image = random.choice(np.concat(self.class0_images, self.class1_images))
+            
         
         if self.transform:
             anchor_image = self.transform(anchor_image)
