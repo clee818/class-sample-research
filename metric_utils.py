@@ -25,10 +25,9 @@ def auc_sigmoid(test_loader, network, embeddings=False):
 def auc_softmax(test_loader, network, average=True, embeddings=False):
     test_losses, y_preds, y_true = inference.run_inference_softmax(test_loader, network, embeddings=embeddings)
     
-    if average: 
-        network_auc = auc(y_preds, y_true)
-    else:
-        network_auc = multiclass_auc(y_preds, y_true)
+    
+    network_auc = multiclass_auc(y_preds, y_true)
+    
     
     print(f'\nTest set: Avg. loss: {test_losses[-1]}, AUC: {network_auc}\n') 
     
@@ -61,26 +60,7 @@ def auc(y_pred, y_true):
     return metrics.roc_auc_score(y_true, y_pred)
 
 def multiclass_auc(y_pred, y_true): 
-    return metric.roc_auc_score(y_true, y_pred, average=False) 
-    """
-    # computes aucs for all class combinations 
-    # number of aucs: num_classes * (num_classes - 1)
-    # final shape: num_classes, num_classes where index corresponds to class 
-    labels = np.unique(y_true)
-    aucs = np.empty((len(labels), len(labels)))
-    
-    for i in range(len(labels)): 
-        for j in range(len(labels)): 
-            try:
-                auc = metrics.roc_auc_score(y_true[y_true==labels[i] or y_true==labels[j]], y_pred[y_pred==labels[i] or y_pred==labels[j]])
-                aucs[i, j] = auc
-            except ValueError:
-                pass
-    return aucs
-   """
-            
-        
-
+    return metrics.roc_auc_score(y_true, y_pred, average='macro', multi_class='ovr') 
 
 
 def get_confidence_interval(y_pred, y_true, verbose=True, metric_fn=accuracy):
