@@ -161,6 +161,7 @@ class ForTripletLoss(Dataset):
             self.class1_images = self.images[self.labels==1]
             
         self.transform=transform 
+        self.num_classes = num_classes
         
          
     def __len__(self):
@@ -170,23 +171,23 @@ class ForTripletLoss(Dataset):
         anchor_image = self.images[index]
         anchor_label = self.labels[index]
        
-        if num_classes==2:
+        if self.num_classes==2:
             if anchor_label == 0:
                 pos_image = random.choice(self.class0_images)
                 neg_image = random.choice(self.class1_images)
             else:
                 pos_image = random.choice(self.class1_images)
                 neg_image = random.choice(self.class0_images)
-        elif num_classes == 3:
+        elif self.num_classes == 3:
             if anchor_label == 0:
                 pos_image = random.choice(self.class0_images)
-                neg_image = random.choice(np.concat(self.class1_images, self.class2_images))
+                neg_image = random.choice(torch.cat((self.class1_images, self.class2_images)))
             elif anchor_label == 1:
                 pos_image = random.choice(self.class1_images)
-                neg_image = random.choice(np.concat(self.class0_images, self.class2_images))
+                neg_image = random.choice(torch.cat((self.class0_images, self.class2_images)))
             else:
                 pos_image = random.choice(self.class2_images)
-                neg_image = random.choice(np.concat(self.class0_images, self.class1_images))
+                neg_image = random.choice(torch.cat((self.class0_images, self.class1_images)))
             
         
         if self.transform:
