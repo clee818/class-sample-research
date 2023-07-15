@@ -25,7 +25,6 @@ def run_inference_sigmoid(dataloader, network, embeddings=False):
             y_preds.extend(pred.float())
             y_true.extend(target.float())
         loss /= len(dataloader.dataset)
-        print(y_preds.shape)
         losses.append(loss)
     
     return losses, y_preds, y_true
