@@ -232,9 +232,9 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
         _, pos_embeds = network(pos_data.float())
         _, neg_embeds = network(neg_data.float())
         
-        cap = cap_calc(anchor_embeds, pos_embeds, neg_embeds)
+        cap = cap_calc(anchor_embeds, pos_embeds, neg_embeds) 
         
-        loss_fn_args['cap_array'] = 1 / cap
+        loss_fn_args['cap_array'] = 1 / cap # cap is inverse of distances 
         loss_func = loss_fn(**loss_fn_args)
         
         

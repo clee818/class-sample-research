@@ -22,9 +22,9 @@ def auc_sigmoid(test_loader, network, embeddings=False):
     return test_losses, network_auc
 
 
-def auc_softmax(test_loader, network, average=True, embeddings=False):
-    test_losses, y_preds, y_true = inference.run_inference_softmax(test_loader, network, embeddings=embeddings)
+def auc_softmax(test_loader, network, embeddings=False):
     
+    test_losses, y_preds, y_true = inference.run_inference_softmax(test_loader, network, embeddings=embeddings)
     
     network_auc = multiclass_auc(y_preds, y_true)
     

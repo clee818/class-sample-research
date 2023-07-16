@@ -41,10 +41,10 @@ class SoftmaxFocalLoss(nn.Module):
 class CappedBCELoss(nn.Module):
     def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None):
         nn.Module.__init__(self)
-        self.loss_cap = loss_cap
-        self.distance = distance
+        self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
+        self.distance = distance # for cosine or euclidean distance to be used 
         self.reduction = reduction
-        self.cap_array = cap_array # used if cap already calculated 
+        self.cap_array = cap_array # used if cap already calculated (e.g. using triplet loss)
         self.function = function # for squaring, etc. 
         
     def cosine_distance(self, data, targets, smote_targets):
@@ -117,10 +117,10 @@ class AllCappedBCELoss(nn.Module):
 class CappedCELoss(nn.Module):
     def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None):
         nn.Module.__init__(self)
-        self.loss_cap = loss_cap
-        self.distance = distance
+        self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
+        self.distance = distance # for cosine or euclidean distance to be used 
         self.reduction = reduction
-        self.cap_array = cap_array # used if cap already calculated 
+        self.cap_array = cap_array # used if cap already calculated (e.g. using triplet loss)
         self.function = function # for squaring, etc. 
         
     def cosine_distance(self, data, targets, smote_targets):
@@ -173,16 +173,19 @@ class CappedCELoss(nn.Module):
     
 
 class TripletLoss(nn.Module):
-    def __init__(self, margin=0.3, reduction='mean'):
+    def __init__(self, margin=0.3, reduction='mean', pos_squared=False):
         super(TripletLoss, self).__init__()
         self.margin = margin
         self.reduction = reduction
+        self.pos_squared = pos_squared
         
     def euclidean_distance(self, x1, x2):
         return (x1 - x2).pow(2).sum(1)
     
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.euclidean_distance(anchor, positive)
+        if self.pos_squared:
+            distance_positive = distance_positive**2
         distance_negative = self.euclidean_distance(anchor, negative)
         if self.reduction == 'mean':
             distance_positive = distance_positive.mean()
@@ -229,7 +232,7 @@ class TripletLossSquaredPositive(nn.Module):
     
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.euclidean_distance(anchor, positive)
-        distance_positive = distance_positive**2
+        distance_positive = distance_positive**2 
         distance_negative = self.euclidean_distance(anchor, negative)
         if self.reduction == 'mean':
             distance_positive = distance_positive.mean()

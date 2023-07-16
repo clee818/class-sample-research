@@ -40,7 +40,8 @@ class Reduce(Dataset):
 
 
 class Ratio(Dataset):
-    # assume all classes are relatively balanced 
+    # assume all classes are balanced 
+    # takes in reduced dataset 
     def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,2,1), CIFAR=True, transform=None):
         assert len(target_ratios) == num_classes
        
@@ -62,10 +63,7 @@ class Ratio(Dataset):
                
         reduced_images = []
         reduced_labels = []
-        
-      
-       # indices = np.random.choice(labels2.shape[0], n, replace=False)
-        
+                
         for i, num in enumerate(nums):
             class_images = images[(targets == num)]
             if CIFAR: 
@@ -77,10 +75,7 @@ class Ratio(Dataset):
         self.images = torch.cat(reduced_images)
         self.labels = torch.cat(reduced_labels).int()
         self.transform=transform
-
-                                       
-        
-        
+     
     def __len__(self):
         return len(self.labels)
                  
