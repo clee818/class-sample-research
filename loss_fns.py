@@ -84,7 +84,6 @@ class CappedBCELoss(nn.Module):
                 elif self.distance == 'cosine':
                     distances = self.cosine_distance(embeds, targets, smote_targets) 
                 if self.function == 'square':
-                    print("SQUARING")
                     cap = ((1 / distances) ** 2) * self.loss_cap
                 else:
                     cap = self.loss_cap / distances
@@ -95,24 +94,6 @@ class CappedBCELoss(nn.Module):
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
-    
-class AllCappedBCELoss(nn.Module):
-    def __init__(self, loss_cap=None, reduction='mean'):
-        nn.Module.__init__(self)
-        self.loss_cap = loss_cap
-        self.reduction = reduction
-        
-        
-    def forward(self, inputs, targets, smote_targets):
-        # same as CappedBCELoss but caps all examples 
-        loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
-        if self.loss_cap:
-            loss = torch.minimum(loss, torch.tensor(self.loss_cap))
-        if self.reduction=='mean':
-            return torch.mean(loss)
-        return loss
-    
-
         
 class CappedCELoss(nn.Module):
     def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None):
@@ -159,7 +140,6 @@ class CappedCELoss(nn.Module):
                 elif self.distance == 'cosine':
                     distances = self.cosine_distance(embeds, targets, smote_targets) 
                 if self.function == 'square':
-                    print("SQUARING")
                     cap = (1 / distances) ** 2 * self.loss_cap
                 else:
                     cap = self.loss_cap / distances
@@ -173,19 +153,16 @@ class CappedCELoss(nn.Module):
     
 
 class TripletLoss(nn.Module):
-    def __init__(self, margin=0.3, reduction='mean', pos_squared=False):
+    def __init__(self, margin=0.5, reduction='mean'):
         super(TripletLoss, self).__init__()
         self.margin = margin
         self.reduction = reduction
-        self.pos_squared = pos_squared
         
     def euclidean_distance(self, x1, x2):
         return (x1 - x2).pow(2).sum(1)
     
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.euclidean_distance(anchor, positive)
-        if self.pos_squared:
-            distance_positive = distance_positive**2
         distance_negative = self.euclidean_distance(anchor, negative)
         if self.reduction == 'mean':
             distance_positive = distance_positive.mean()

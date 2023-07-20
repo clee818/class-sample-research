@@ -101,12 +101,14 @@ class Smote(Dataset):
         self.images, self.labels = smote.fit_resample(ratio_dataset.images.reshape(shape[0], -1), ratio_dataset.labels)
         
         self.smote_labels = np.zeros(target_shape)
+        
         self.smote_labels[shape[0]:] = SMOTE_LABEL 
         
         if CIFAR:
             self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
         else: 
             self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2]))
+        
         self.labels = torch.from_numpy(self.labels)
         
         self.transform=transform
