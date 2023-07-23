@@ -214,15 +214,15 @@ def train_linear_probe(epoch, train_loader, network,
 
 
 def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory=None,
-                       verbose=True, cap_calc=loss_fns.TripletLoss, loss_fn=loss_fns.CappedBCELoss, loss_fn_args={}):
+                       verbose=True, cap_calc=loss_fns.TripletLoss, loss_fn=loss_fns.CappedBCELoss, loss_fn_args={}, print_dist=False):
     train_counter = []
     train_losses = []
 
     cap_calc = cap_calc(reduction='none')
-    
+        
     loss_func = loss_fn(**loss_fn_args)
-
     
+
     network.train()
     for batch_idx, (anchor_data, pos_data, neg_data, target, smote_target) in enumerate(
             train_loader):
@@ -232,7 +232,12 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
         _, pos_embeds = network(pos_data.float())
         _, neg_embeds = network(neg_data.float())
         
+        
         cap = cap_calc(anchor_embeds, pos_embeds, neg_embeds) 
+        
+        if print_dist:
+            print("Triplet Loss Calculation") 
+            print(cap) 
         
         loss_fn_args['cap_array'] = 1 / cap # cap is inverse of distances 
         loss_func = loss_fn(**loss_fn_args)
