@@ -162,8 +162,12 @@ class CappedCELoss(nn.Module):
             return torch.mean(loss)
         return loss
 
+<<<<<<< HEAD
+class CappedBCELossAvgDistance(nn.Module): 
+=======
 class CappedBCELossAvgDistance: 
     
+>>>>>>> 543d86010cc25c0b9aa60c65faf07006b1e17478
     def __init__(self, loss_cap=None, distance=None, avg_tensors=None, reduction='mean', function=None, print_loss=False):
         nn.Module.__init__(self)
         self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
@@ -191,6 +195,9 @@ class CappedBCELossAvgDistance:
         
     def forward(self, inputs, targets, smote_targets, embeds=None):
         loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+<<<<<<< HEAD
+
+=======
         if self.print_loss:
             print("Loss before cap") 
             print(loss) 
@@ -198,6 +205,7 @@ class CappedBCELossAvgDistance:
             print(smote_targets) 
             print("Distance") 
             print(distances) 
+>>>>>>> 543d86010cc25c0b9aa60c65faf07006b1e17478
         if self.loss_cap != None:
             # always pass in embeddings  
             if self.distance == 'euclidean':
@@ -208,14 +216,28 @@ class CappedBCELossAvgDistance:
                 cap = ((1 / distances) ** 2) * self.loss_cap
             else:
                 cap = self.loss_cap / distances
+<<<<<<< HEAD
+            
+            loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap)[smote_targets==SMOTE_LABEL])
+            
+        if self.print_loss:
+            print("Loss before cap") 
+            print(loss) 
+            print("SMOTE Labels") 
+            print(smote_targets) 
+            print("Distance") 
+            print(distances) 
+            
+=======
             loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL])
+>>>>>>> 543d86010cc25c0b9aa60c65faf07006b1e17478
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
     
 
 class TripletLoss(nn.Module):
-    def __init__(self, margin=0.5, reduction='mean'):
+    def __init__(self, margin=0.3, reduction='mean'):
         super(TripletLoss, self).__init__()
         self.margin = margin
         self.reduction = reduction
