@@ -39,7 +39,7 @@ class SoftmaxFocalLoss(nn.Module):
     
     
 class CappedBCELoss(nn.Module):
-    def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None, print_loss=False):
+    def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None, print_loss=False, print_capped=False):
         nn.Module.__init__(self)
         self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
         self.distance = distance # for cosine or euclidean distance to be used 
@@ -47,6 +47,7 @@ class CappedBCELoss(nn.Module):
         self.cap_array = cap_array # used if cap already calculated (e.g. using triplet loss)
         self.function = function # for squaring, etc. 
         self.print_loss = print_loss
+        self.print_capped = print_capped
         
     def cosine_distance(self, data, targets, smote_targets):
         dist = torch.zeros(data.shape[0])
@@ -79,6 +80,14 @@ class CappedBCELoss(nn.Module):
             print(loss) 
             print("SMOTE Labels") 
             print(smote_targets) 
+        if self.print_capped:
+            loss_mask = torch.zeros(loss.shape, dtype=torch.int) 
+            loss_mask[smote_targets == SMOTE_LABEL] = 1
+            loss_mask[loss < self.loss_cap] = 0
+            n_capped = torch.sum(loss_mask) 
+            amt_capped = torch.sum(loss[loss_mask]) 
+            print("Number capped: " + str(n_capped.item())) 
+            print("Average cap: " + str((amt_capped/n_capped).item())) 
         if self.loss_cap != None:
             if self.cap_array != None:
                 # capped smote using triplet loss
@@ -100,20 +109,21 @@ class CappedBCELoss(nn.Module):
             else:
                 # cap is a constant 
                 loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(self.loss_cap))
+                
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
     
         
 class CappedCELoss(nn.Module):
-    def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None):
+    def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None, print_capped=False):
         nn.Module.__init__(self)
         self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
         self.distance = distance # for cosine or euclidean distance to be used 
         self.reduction = reduction
         self.cap_array = cap_array # used if cap already calculated (e.g. using triplet loss)
         self.function = function # for squaring, etc. 
-        
+        self.print_capped = print_capped 
         
     def cosine_distance(self, data, targets, smote_targets):
         dist = torch.zeros(data.shape[0])
@@ -141,6 +151,14 @@ class CappedCELoss(nn.Module):
         
     def forward(self, inputs, targets, smote_targets, embeds=None):
         loss = F.cross_entropy(inputs, targets.long(), reduction='none')
+        if self.print_capped:
+            loss_mask = torch.zeros(loss.shape, dtype=torch.int) 
+            loss_mask[smote_targets == SMOTE_LABEL] = 1
+            loss_mask[loss < self.loss_cap] = 0
+            n_capped = torch.sum(loss_mask) 
+            amt_capped = torch.sum(loss[loss_mask]) 
+            print("Number capped: " + str(n_capped.item())) 
+            print("Average cap: " + str((amt_capped/n_capped).item())) 
         if self.loss_cap != None:
             if self.cap_array != None:
                 # capped smote using triplet loss
@@ -208,12 +226,64 @@ class CappedBCELossAvgDistance(nn.Module):
             print("Distance") 
             print(distances) 
             
-            loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
+        loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
     
 
+class CappedCELossAvgDistance(nn.Module): 
+    def __init__(self, loss_cap=None, distance=None, avg_tensors=None, reduction='mean', function=None, print_loss=False):
+        nn.Module.__init__(self)
+        self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
+        self.distance = distance # for cosine or euclidean distance to be used 
+        self.reduction = reduction
+        self.avg_tensors = avg_tensors
+        self.function = function # for squaring, etc. 
+        self.print_loss = print_loss
+        
+    def cosine_distance(self, data, targets, smote_targets):
+        dist = torch.zeros(data.shape[0])
+        targets = np.array(targets)
+        for label in range(len(np.unique(targets))):
+            dist[targets == label] = 1 - F.cosine_similarity(data[targets == label], self.avg_tensors[label])
+        return dist
+
+    def euclidean_distance(self, data, targets, smote_targets):
+        dist = torch.zeros(data.shape[0])
+        targets = np.array(targets)
+        for label in range(len(np.unique(targets))):
+            dist[targets == label] = (data[targets == label] - self.avg_tensors[label]).pow(2).sum(
+                1).sqrt()
+        return dist
+        
+        
+    def forward(self, inputs, targets, smote_targets, embeds=None):
+            loss = F.cross_entropy(inputs, targets.long(), reduction='none')       
+            if self.loss_cap != None:
+            # always pass in embeddings  
+                if self.distance == 'euclidean':
+                    distances = self.euclidean_distance(embeds, targets, smote_targets)
+                elif self.distance == 'cosine':
+                    distances = self.cosine_distance(embeds, targets, smote_targets) 
+                if self.function == 'square':
+                    cap = ((1 / distances) ** 2) * self.loss_cap
+                else:
+                    cap = self.loss_cap / distances
+            if self.print_loss:
+                print("Loss before cap") 
+                print(loss) 
+                print("SMOTE Labels") 
+                print(smote_targets) 
+                print("Distance") 
+                print(distances) 
+
+            loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
+            if self.reduction=='mean':
+                return torch.mean(loss)
+            return loss
+    
+    
 class TripletLoss(nn.Module):
     def __init__(self, margin=0.3, reduction='mean'):
         super(TripletLoss, self).__init__()

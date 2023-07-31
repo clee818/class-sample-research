@@ -31,11 +31,11 @@ class ConvNetWithEmbeddings(nn.Module):
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
         self.conv1_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(250, 128)
+        self.fc1 = nn.Linear(250, 50)
         if (num_classes == 2): 
-            self.fc2 = nn.Linear(128, 1) 
+            self.fc2 = nn.Linear(50, 1) 
         else:
-            self.fc2 = nn.Linear(128, num_classes)
+            self.fc2 = nn.Linear(50, num_classes)
 
 
     def forward(self, x):
