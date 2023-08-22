@@ -20,6 +20,8 @@ def train_sigmoid(epoch, train_loader, network, optimizer, directory=None,
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         output = network(data)
+        if type(output) is tuple:
+            output = output[0] 
         loss = loss_fn(output.squeeze().float(), target.float())
         pred = output.data
         loss.backward()
@@ -121,9 +123,9 @@ def train_triplet_loss(epoch, train_loader, network, optimizer, directory=None,
     for batch_idx, (anchor_data, pos_data, neg_data, target) in enumerate(
             train_loader):
         optimizer.zero_grad()
-        anchor_embeds = network(anchor_data.float())
-        pos_embeds = network(pos_data.float())
-        neg_embeds = network(neg_data.float())
+        anchor_embeds = network(anchor_data)
+        pos_embeds = network(pos_data)
+        neg_embeds = network(neg_data)
         loss = loss_fn(anchor_embeds, pos_embeds, neg_embeds)
         loss.backward()
         optimizer.step()

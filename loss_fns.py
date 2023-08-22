@@ -80,14 +80,6 @@ class CappedBCELoss(nn.Module):
             print(loss) 
             print("SMOTE Labels") 
             print(smote_targets) 
-        if self.print_capped:
-            loss_mask = torch.zeros(loss.shape, dtype=torch.int) 
-            loss_mask[smote_targets == SMOTE_LABEL] = 1
-            loss_mask[loss < self.loss_cap] = 0
-            n_capped = torch.sum(loss_mask) 
-            amt_capped = torch.sum(loss[loss_mask]) 
-            print("Number capped: " + str(n_capped.item())) 
-            print("Average cap: " + str((amt_capped/n_capped).item())) 
         if self.loss_cap != None:
             if self.cap_array != None:
                 # capped smote using triplet loss
@@ -102,11 +94,24 @@ class CappedBCELoss(nn.Module):
                     cap = ((1 / distances) ** 2) * self.loss_cap
                 else:
                     cap = self.loss_cap / distances
-                if self.print_loss:
-                    print("Distance") 
-                    print(distances) 
+                if self.print_capped:
+                    loss_mask = torch.zeros(loss.shape, dtype=torch.int) 
+                    loss_mask[smote_targets == SMOTE_LABEL] = 1
+                    loss_mask[loss < cap] = 0
+                    n_capped = torch.sum(loss_mask) 
+                    amt_capped = torch.sum(loss[loss_mask]) 
+                    print("Number capped: " + str(n_capped.item())) 
+                    print("Average cap: " + str((amt_capped/n_capped).item())) 
                 loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap)[smote_targets==SMOTE_LABEL])
             else:
+                if self.print_capped:
+                    loss_mask = torch.zeros(loss.shape, dtype=torch.int) 
+                    loss_mask[smote_targets == SMOTE_LABEL] = 1
+                    loss_mask[loss < self.loss_cap] = 0
+                    n_capped = torch.sum(loss_mask) 
+                    amt_capped = torch.sum(loss[loss_mask]) 
+                    print("Number capped: " + str(n_capped.item())) 
+                    print("Average cap: " + str((amt_capped/n_capped).item())) 
                 # cap is a constant 
                 loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(self.loss_cap))
                 
@@ -218,15 +223,15 @@ class CappedBCELossAvgDistance(nn.Module):
                 cap = ((1 / distances) ** 2) * self.loss_cap
             else:
                 cap = self.loss_cap / distances
-        if self.print_loss:
-            print("Loss before cap") 
-            print(loss) 
-            print("SMOTE Labels") 
-            print(smote_targets) 
-            print("Distance") 
-            print(distances) 
+            if self.print_loss:
+                print("Loss before cap") 
+                print(loss) 
+                print("SMOTE Labels") 
+                print(smote_targets) 
+                print("Distance") 
+                print(distances) 
             
-        loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
+            loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
         if self.reduction=='mean':
             return torch.mean(loss)
         return loss
@@ -270,15 +275,15 @@ class CappedCELossAvgDistance(nn.Module):
                     cap = ((1 / distances) ** 2) * self.loss_cap
                 else:
                     cap = self.loss_cap / distances
-            if self.print_loss:
-                print("Loss before cap") 
-                print(loss) 
-                print("SMOTE Labels") 
-                print(smote_targets) 
-                print("Distance") 
-                print(distances) 
+                if self.print_loss:
+                    print("Loss before cap") 
+                    print(loss) 
+                    print("SMOTE Labels") 
+                    print(smote_targets) 
+                    print("Distance") 
+                    print(distances) 
 
-            loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
+                loss[smote_targets == SMOTE_LABEL] = torch.minimum(loss[smote_targets == SMOTE_LABEL], torch.tensor(cap[smote_targets==SMOTE_LABEL]))
             if self.reduction=='mean':
                 return torch.mean(loss)
             return loss
@@ -290,6 +295,7 @@ class TripletLoss(nn.Module):
         self.margin = margin
         self.reduction = reduction
         
+        
     def euclidean_distance(self, x1, x2):
         return (x1 - x2).pow(2).sum(1)
     
@@ -299,8 +305,8 @@ class TripletLoss(nn.Module):
         if self.reduction == 'mean':
             distance_positive = distance_positive.mean()
             distance_negative = distance_negative.mean()
-        losses = torch.relu(distance_positive - distance_negative + self.margin)
-        losses[losses == 0] = 0.00001
+        losses = F.relu(distance_positive - distance_negative + self.margin)
+     #   losses[losses == 0] = 0.00001
         return losses
     
     

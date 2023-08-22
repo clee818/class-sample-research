@@ -156,6 +156,7 @@ class ForTripletLoss(Dataset):
         else:
             self.class0_images = self.images[self.labels==0]
             self.class1_images = self.images[self.labels==1]
+            self.class2_images = self.images[self.labels==2] 
             
         self.transform=transform 
         self.num_classes = num_classes

@@ -53,25 +53,25 @@ class ConvNetOnlyEmbeddings(nn.Module):
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
         self.conv1_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(250, 128)
+        self.fc1 = nn.Linear(250, 50)
 
     def forward(self, x):
         x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
         x = F.relu(F.max_pool2d(self.conv2(x), 2))
         x = x.view(-1, 250) 
-        embed = F.relu(self.fc1(x))
+        embed = self.fc1(x) 
         return embed
 
 class ConvNetLinearProbe(nn.Module): 
     def __init__(self, num_classes):
         super(ConvNetLinearProbe, self).__init__()
         if (num_classes == 2): 
-            self.fc2 = nn.Linear(128, 1) 
+            self.fc2 = nn.Linear(50, 1) 
         else:
-            self.fc2 = nn.Linear(128, num_classes)
+            self.fc2 = nn.Linear(50, num_classes)
             
     def forward(self, embed):
-        x = F.dropout(embed, training=self.training)
+        x =  F.relu(F.dropout(embed, training=self.training)) 
         x = self.fc2(x)
         return x
     
@@ -86,6 +86,7 @@ class CompleteConvNet(nn.Module):
         embeds = self.embed_network(x)
         out = self.linear_probe(embeds) 
         return out, embeds
+    
     
     
 class SigmoidLogisticRegression(nn.Module):
@@ -116,3 +117,117 @@ class SoftmaxLogisticRegression(nn.Module):
         x = x.view(-1, self.shape)
         x = self.fc(x)
         return x
+
+    
+    
+class ConvNetWithEmbeddingsEarly(nn.Module):
+    def __init__(self, num_classes):
+        super(ConvNetWithEmbeddingsEarly, self).__init__()
+        self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
+        self.conv1_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(250, 50)
+        if (num_classes == 2): 
+            self.fc2 = nn.Linear(50, 1) 
+        else:
+            self.fc2 = nn.Linear(50, num_classes)
+
+
+    def forward(self, x):
+        x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
+        embed = F.max_pool2d((self.conv2(x)), 2)
+        x = F.relu(embed)
+        x = x.view(-1, 250) 
+        x = self.fc1(x)
+        x = F.relu(F.dropout(x, training=self.training))
+        x = self.fc2(x)
+        
+        embed = embed.view(-1, 250) 
+        return x, embed 
+    
+class ConvNetOnlyEmbeddingsEarly(nn.Module):
+    def __init__(self, num_classes):
+        super(ConvNetOnlyEmbeddingsEarly, self).__init__()
+        self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
+        self.conv1_drop = nn.Dropout2d()
+        
+
+    def forward(self, x):
+        x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
+        embed = F.max_pool2d((self.conv2(x)), 2)
+        embed = embed.view(-1, 250) 
+        return embed
+
+class ConvNetLinearProbeEarly(nn.Module): 
+    def __init__(self, num_classes):
+        super(ConvNetLinearProbeEarly, self).__init__()
+        self.fc1 = nn.Linear(250, 50)
+        if (num_classes == 2): 
+            self.fc2 = nn.Linear(50, 1) 
+        else:
+            self.fc2 = nn.Linear(50, num_classes)
+            
+    def forward(self, embed):
+        x = F.relu(embed)
+        x = self.fc1(x)
+        x = F.relu(F.dropout(x, training=self.training))
+        x = self.fc2(x)
+        return x
+    
+class ConvNetWithEmbeddingsEarly2(nn.Module):
+    def __init__(self, num_classes):
+        super(ConvNetWithEmbeddingsEarly2, self).__init__()
+        self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
+        self.conv1_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(250, 50)
+        if (num_classes == 2): 
+            self.fc2 = nn.Linear(50, 1) 
+        else:
+            self.fc2 = nn.Linear(50, num_classes)
+
+
+    def forward(self, x):
+        embed = self.conv1(x)
+        x = F.relu(F.max_pool2d(self.conv1_drop(embed), 2))
+        x = F.max_pool2d((self.conv2(x)), 2)
+        x = F.relu(x)
+        x = x.view(-1, 250) 
+        x = self.fc1(x)
+        x = F.relu(F.dropout(x, training=self.training))
+        x = self.fc2(x)
+        
+        embed = torch.flatten(embed) 
+        return x, embed 
+    
+class ConvNetOnlyEmbeddingsEarly2(nn.Module):
+    def __init__(self, num_classes):
+        super(ConvNetOnlyEmbeddingsEarly2, self).__init__()
+        self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
+
+    def forward(self, x):
+        embed = self.conv1(x)
+        return embed
+
+class ConvNetLinearProbeEarly2(nn.Module): 
+    def __init__(self, num_classes):
+        super(ConvNetLinearProbeEarly2, self).__init__()
+        self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
+        self.conv1_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(250, 50)
+        if (num_classes == 2): 
+            self.fc2 = nn.Linear(50, 1) 
+        else:
+            self.fc2 = nn.Linear(50, num_classes)
+            
+    def forward(self, embed):
+        x = F.relu(F.max_pool2d(self.conv1_drop(embed), 2))
+        x = F.max_pool2d((self.conv2(x)), 2)
+        x = F.relu(x)
+        x = x.view(-1, 250) 
+        x = self.fc1(x)
+        x = F.relu(F.dropout(x, training=self.training))
+        x = self.fc2(x)
+        return x
+    
