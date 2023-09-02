@@ -10,7 +10,14 @@ import torch.nn as nn
 
 import inference
     
+def triplet_loss(test_loader, network): 
+    
+    test_losses = inference.run_inference_triplet_loss(test_loader, network)
+    print(f'\nTest set: Avg. loss: {test_losses[-1]}')  
 
+    return test_losses 
+    
+    
 def auc_sigmoid(test_loader, network, embeddings=False):
     
     test_losses, y_preds, y_true = inference.run_inference_sigmoid(test_loader, network, embeddings=embeddings)

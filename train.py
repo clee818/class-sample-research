@@ -6,7 +6,7 @@ import loss_fns
 import numpy as np
 import loss_fns
 
-LOG_INTERVAL = 10
+LOG_INTERVAL = 1000
 
 
 def train_sigmoid(epoch, train_loader, network, optimizer, directory=None,

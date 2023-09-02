@@ -1,8 +1,29 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import loss_fns
 
 import numpy as np
+
+def run_inference_triplet_loss(dataloader, network):
+    losses = []
+    loss = 0
+    
+    network.eval()
+    
+    loss_fn=loss_fns.TripletLoss(); 
+    
+    with torch.no_grad():
+        for anchor_data, pos_data, neg_data, target in dataloader:
+            anchor_embed = network(anchor_data)
+            pos_embed = network(pos_data)
+            neg_embed = network(neg_data)
+            loss += loss_fn(anchor_embed, pos_embed, neg_embed).item()
+        loss /= len(dataloader.dataset)
+        losses.append(loss)
+    
+    return losses
+    
 
 def run_inference_sigmoid(dataloader, network, embeddings=False):  
     losses = []
