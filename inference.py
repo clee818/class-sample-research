@@ -11,7 +11,7 @@ def run_inference_triplet_loss(dataloader, network):
     
     network.eval()
     
-    loss_fn=loss_fns.TripletLoss(); 
+    loss_fn=loss_fns.TripletLoss(margin=1000); 
     
     with torch.no_grad():
         for anchor_data, pos_data, neg_data, target in dataloader:
@@ -19,7 +19,7 @@ def run_inference_triplet_loss(dataloader, network):
             pos_embed = network(pos_data)
             neg_embed = network(neg_data)
             loss += loss_fn(anchor_embed, pos_embed, neg_embed).item()
-        loss /= len(dataloader.dataset)
+        loss /= len(dataloader)
         losses.append(loss)
     
     return losses

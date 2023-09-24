@@ -292,9 +292,9 @@ class CappedCELossAvgDistance(nn.Module):
 class TripletLoss(nn.Module):
     def __init__(self, margin=0.3, reduction='mean'):
         super(TripletLoss, self).__init__()
-        self.margin = margin
-        self.reduction = reduction
-        
+       # self.margin = margin
+       # self.reduction = reduction
+        self.tripletloss = nn.TripletMarginLoss(margin=margin, p=2.0, swap=False, reduction=reduction)
         
     def euclidean_distance(self, x1, x2):
         return (x1 - x2).pow(2).sum(1)
@@ -302,11 +302,23 @@ class TripletLoss(nn.Module):
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.euclidean_distance(anchor, positive)
         distance_negative = self.euclidean_distance(anchor, negative)
-        if self.reduction == 'mean':
-            distance_positive = distance_positive.mean()
-            distance_negative = distance_negative.mean()
+        #if self.reduction == 'mean':
+        #    distance_positive = distance_positive.mean()
+        #    distance_negative = distance_negative.mean()
+        """
+        print("Positive distance: " + str(distance_positive.shape))
+        print("Positive distance: " + str(distance_positive))
+        print("Negative distance: " + str(distance_negative.shape))
+        print("Negative distance: " + str(distance_negative))
+        print("Margin: " + str(self.margin))
+        """
+        """
         losses = F.relu(distance_positive - distance_negative + self.margin)
+        if self.reduction == 'mean': 
+            losses = losses.mean() 
      #   losses[losses == 0] = 0.00001
+     """
+        losses = self.tripletloss(anchor, positive, negative) 
         return losses
     
     

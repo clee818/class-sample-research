@@ -128,11 +128,13 @@ class Smote(Dataset):
     
     
 class ForTripletLoss(Dataset): 
-    def __init__(self, dataset, smote=False, num_classes=2, transform=None):
+    def __init__(self, dataset, smote=False, transform=None, nums=(0,1)):
         self.images = dataset.images.float()
         self.labels = dataset.labels
         self.smote = smote 
        
+       
+        num_classes = len(nums) 
         if smote: 
             self.smote_labels = dataset.smote_labels
             class0_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
@@ -141,8 +143,8 @@ class ForTripletLoss(Dataset):
             class0_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
             class1_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
             
-            class0_smote_mask[self.labels!=0] = False
-            class1_smote_mask[self.labels!=1] = False
+            class0_smote_mask[self.labels!=nums[0]] = False
+            class1_smote_mask[self.labels!=nums[1]] = False
             
             self.class0_images = self.images[class0_smote_mask]
             self.class1_images = self.images[class1_smote_mask]
@@ -150,13 +152,75 @@ class ForTripletLoss(Dataset):
             if num_classes == 3:
                 class2_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
                 class2_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
-                class2_smote_mask[self.labels!=2] = False
+                class2_smote_mask[self.labels!=nums[2]] = False
                 self.class2_images = self.images[class2_smote_mask]
             
         else:
-            self.class0_images = self.images[self.labels==0]
-            self.class1_images = self.images[self.labels==1]
-            self.class2_images = self.images[self.labels==2] 
+            self.class0_images = self.images[self.labels==nums[0]]
+            self.class1_images = self.images[self.labels==nums[1]]
+            self.class2_images = self.images[self.labels==nums[2]] 
+            
+        self.transform=transform 
+        self.num_classes = num_classes
+        self.nums = nums
+        
+         
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, index):
+        anchor_image = self.images[index]
+        anchor_label = self.labels[index]
+       
+        if self.num_classes==2:
+            if anchor_label == self.nums[0]:
+                pos_image = random.choice(self.class0_images)
+                neg_image = random.choice(self.class1_images)
+            else:
+                pos_image = random.choice(self.class1_images)
+                neg_image = random.choice(self.class0_images)
+        elif self.num_classes == 3:
+            if anchor_label == self.nums[0]:
+                pos_image = random.choice(self.class0_images)
+                neg_image = random.choice(torch.cat((self.class1_images, self.class2_images)))
+            elif anchor_label == self.nums[1]:
+                pos_image = random.choice(self.class1_images)
+                neg_image = random.choice(torch.cat((self.class0_images, self.class2_images)))
+            else:
+                pos_image = random.choice(self.class2_images)
+                neg_image = random.choice(torch.cat((self.class0_images, self.class1_images)))
+            
+        
+        if self.transform:
+            anchor_image = self.transform(anchor_image)
+            pos_image = self.transform(pos_image)
+            neg_image = self.transform(neg_image)
+        if self.smote: 
+            anchor_smote_label = self.smote_labels[index]
+            return (anchor_image, pos_image, neg_image, anchor_label, anchor_smote_label)
+        return (anchor_image, pos_image, neg_image, anchor_label)
+    
+class ForTripletLossSmoteReversed(Dataset): 
+    # WIP, don't use yet 
+    def __init__(self, dataset, smote=True, num_classes=2, transform=None):
+        assert smote == True
+        assert num_classes==2
+        self.images = dataset.images.float()
+        self.labels = dataset.labels
+        self.smote = smote 
+
+        self.smote_labels = dataset.smote_labels
+        class0_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
+        class1_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
+
+        class0_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
+        class1_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
+
+        class0_smote_mask[self.labels!=0] = False
+        class1_smote_mask[self.labels!=1] = False
+
+        self.class0_images = self.images[class0_smote_mask]
+        self.class1_images = self.images[class1_smote_mask]
             
         self.transform=transform 
         self.num_classes = num_classes
@@ -176,16 +240,6 @@ class ForTripletLoss(Dataset):
             else:
                 pos_image = random.choice(self.class1_images)
                 neg_image = random.choice(self.class0_images)
-        elif self.num_classes == 3:
-            if anchor_label == 0:
-                pos_image = random.choice(self.class0_images)
-                neg_image = random.choice(torch.cat((self.class1_images, self.class2_images)))
-            elif anchor_label == 1:
-                pos_image = random.choice(self.class1_images)
-                neg_image = random.choice(torch.cat((self.class0_images, self.class2_images)))
-            else:
-                pos_image = random.choice(self.class2_images)
-                neg_image = random.choice(torch.cat((self.class0_images, self.class1_images)))
             
         
         if self.transform:

@@ -73,7 +73,6 @@ def train_sigmoid_with_smote(epoch, train_loader, network, optimizer,
         torch.save(network.state_dict(), directory)
     return train_counter, train_losses
 
-
 def train_sigmoid_with_embeddings(epoch, train_loader, network, optimizer,
                                   directory=None, verbose=True,
                                   loss_fn=loss_fns.CappedBCELoss,
@@ -362,4 +361,40 @@ def train_softmax_with_embeddings(epoch, train_loader, network, optimizer,
     if directory:
         torch.save(network.state_dict(), directory)
     return train_counter, train_losses
+
+
+def train_sigmoid_with_smote_embeddings(epoch, train_loader, network, optimizer,
+                                  directory=None, verbose=True,
+                                  loss_fn=loss_fns.CappedBCELoss,
+                                  loss_fn_args={}):
     
+    # uses smote on embeddings - need to pass into function 
+
+    train_counter = []
+    train_losses = []
+
+    loss_func = loss_fn(**loss_fn_args)
+
+    network.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        optimizer.zero_grad()
+        output, embeds = network(data)
+        loss = loss_func(output.squeeze().float(), target.float(), smote_target, embeds=embeds)
+        pred = output.data
+        loss.backward()
+        optimizer.step()
+        if batch_idx % LOG_INTERVAL == 0 and verbose:
+            print(
+                'Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch,
+                                                                         batch_idx * len(
+                                                                             data),
+                                                                         len(train_loader.dataset),
+                                                                         100. * batch_idx /
+                                                                         len(train_loader),
+                                                                         loss.item()))
+        train_losses.append(loss.item())
+        train_counter.append(
+            (batch_idx * 64) + ((epoch) * len(train_loader.dataset)))
+    if directory:
+        torch.save(network.state_dict(), directory)
+    return train_counter, train_losses
