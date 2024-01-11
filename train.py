@@ -11,6 +11,7 @@ LOG_INTERVAL = 1000
 
 def train_sigmoid(epoch, train_loader, network, optimizer, directory=None,
                   verbose=True, loss_fn=nn.BCEWithLogitsLoss, loss_fn_args={}):
+    # train for binary classification. No SMOTE. 
     train_counter = []
     train_losses = []
 
@@ -44,6 +45,8 @@ def train_sigmoid(epoch, train_loader, network, optimizer, directory=None,
 def train_sigmoid_with_smote(epoch, train_loader, network, optimizer,
                              directory=None, verbose=True,
                              loss_fn=loss_fns.CappedBCELoss, loss_fn_args={}):
+    # train for binary classification with SMOTE. 
+    
     train_counter = []
     train_losses = []
 
@@ -77,7 +80,7 @@ def train_sigmoid_with_embeddings(epoch, train_loader, network, optimizer,
                                   directory=None, verbose=True,
                                   loss_fn=loss_fns.CappedBCELoss,
                                   loss_fn_args={}):
-    # always uses smote
+    # always uses SMOTE
 
     train_counter = []
     train_losses = []
@@ -112,6 +115,7 @@ def train_sigmoid_with_embeddings(epoch, train_loader, network, optimizer,
 
 def train_triplet_loss(epoch, train_loader, network, optimizer, directory=None,
                        verbose=True, loss_fn_args={}):
+    # used for triplet loss training (binary or multiclass). No SMOTE. 
     train_counter = []
     train_losses = []
 
@@ -148,6 +152,8 @@ def train_triplet_loss(epoch, train_loader, network, optimizer, directory=None,
 
 def train_triplet_loss_smote(epoch, train_loader, network, optimizer, directory=None,
                        verbose=True, loss_fn_args={}):
+    # used for triplet loss training (binary or multiclass) on datasets using SMOTE. 
+    
     train_counter = []
     train_losses = []
 
@@ -216,6 +222,9 @@ def train_linear_probe(epoch, train_loader, network,
 
 def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory=None,
                        verbose=True, cap_calc=loss_fns.TripletLoss, loss_fn=loss_fns.CappedBCELoss, loss_fn_args={}, print_dist=False):
+    
+    # used for training capped loss (on SMOTE, both binary and multiclass) using the triplet loss function as the cap.
+    
     train_counter = []
     train_losses = []
 
@@ -268,6 +277,7 @@ def train_triplet_capped_loss(epoch, train_loader, network, optimizer, directory
 
 def train_softmax(epoch, train_loader, network, optimizer, directory=None,
                   verbose=True, loss_fn=nn.CrossEntropyLoss, loss_fn_args={}):
+    # train for multiclass classification. No SMOTE. 
     train_counter = []
     train_losses = []
 
@@ -301,6 +311,7 @@ def train_softmax(epoch, train_loader, network, optimizer, directory=None,
 def train_softmax_with_smote(epoch, train_loader, network, optimizer,
                              directory=None, verbose=True,
                              loss_fn=loss_fns.CappedCELoss, loss_fn_args={}):
+    # train for multiclass classification with SMOTE. 
     train_counter = []
     train_losses = []
 

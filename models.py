@@ -75,7 +75,7 @@ class ConvNetLinearProbe(nn.Module):
         x = self.fc2(x)
         return x
     
-    
+
 class CompleteConvNet(nn.Module): 
     def __init__(self, embed_network, linear_probe):
         super(CompleteConvNet, self).__init__()

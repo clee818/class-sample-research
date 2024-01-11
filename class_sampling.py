@@ -6,19 +6,16 @@ import random
 
 class Reduce(Dataset):
     # reduces number of classes
-    # takes in original dataset, target # of classes
-    def __init__(self, original_dataset, num_classes, nums=(0,1), transform=None, CIFAR=False):        
-       
-        if CIFAR: 
-            indices = np.isin(original_dataset.targets, nums) 
-            self.images = torch.from_numpy(original_dataset.data[indices==1]).float()
-            self.labels = torch.from_numpy(np.array(original_dataset.targets)[indices==1])
-        else:
-            indices = np.isin(original_dataset.train_labels, nums) 
-            self.images = original_dataset.train_data[indices==1].unsqueeze(1).float()
-            self.labels = original_dataset.train_labels[indices==1]
+    # takes in original dataset, target # of classes, which classes to be used 
+    def __init__(self, original_dataset, num_classes, nums=(0,1), transform=None):  
         
-        self.nums = nums
+        assert len(nums) == num_classes
+       
+        indices = np.isin(original_dataset.targets, nums) 
+        self.images = torch.from_numpy(original_dataset.data[indices==1]).float()
+        self.labels = torch.from_numpy(np.array(original_dataset.targets)[indices==1])
+
+        self.nums = nums 
         self.transform = transform
         
     def __len__(self):
@@ -38,11 +35,10 @@ class Reduce(Dataset):
     
     
 
-
 class Ratio(Dataset):
-    # assume all classes are balanced 
-    # takes in reduced dataset 
-    def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,2,1), CIFAR=True, transform=None):
+    # assumes all classes are balanced 
+    # takes in reduced or unreduced dataset 
+    def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,2,1), transform=None):
         assert len(target_ratios) == num_classes
        
         self.nums=nums
@@ -66,8 +62,7 @@ class Ratio(Dataset):
                 
         for i, num in enumerate(nums):
             class_images = images[(targets == num)]
-            if CIFAR: 
-                class_images = torch.from_numpy(class_images)
+            class_images = torch.from_numpy(class_images)
             indices = np.random.choice(class_images.shape[0], ratio_class_counts[i], replace=False)
             reduced_images.append(class_images[indices])
             reduced_labels.append(torch.from_numpy(np.full(ratio_class_counts[i], i)))
@@ -92,7 +87,9 @@ SMOTE_LABEL = 1
 
 
 class Smote(Dataset): 
-    def __init__(self, ratio_dataset, target_shape, CIFAR=True, transform=None):
+    # takes in imbalanced dataset 
+    # apples SMOTE to the minority class(es)
+    def __init__(self, ratio_dataset, target_shape, transform=None):
         
         shape = ratio_dataset.images.shape
                 
@@ -104,10 +101,7 @@ class Smote(Dataset):
         
         self.smote_labels[shape[0]:] = SMOTE_LABEL 
         
-        if CIFAR:
-            self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
-        else: 
-            self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2]))
+        self.images = torch.from_numpy(self.images.reshape(-1, shape[1], shape[2], shape[3]))
         
         self.labels = torch.from_numpy(self.labels)
         
@@ -128,10 +122,12 @@ class Smote(Dataset):
     
     
 class ForTripletLoss(Dataset): 
+    # modifies dataset to be used for triplet loss 
+    # NOTE: only works with 2 class or 3 class at the moment 
     def __init__(self, dataset, smote=False, transform=None, nums=(0,1)):
         self.images = dataset.images.float()
         self.labels = dataset.labels
-        self.smote = smote 
+        self.smote = smote # whether dataset passed in uses SMOTE 
        
        
         num_classes = len(nums) 
@@ -190,57 +186,6 @@ class ForTripletLoss(Dataset):
             else:
                 pos_image = random.choice(self.class2_images)
                 neg_image = random.choice(torch.cat((self.class0_images, self.class1_images)))
-            
-        
-        if self.transform:
-            anchor_image = self.transform(anchor_image)
-            pos_image = self.transform(pos_image)
-            neg_image = self.transform(neg_image)
-        if self.smote: 
-            anchor_smote_label = self.smote_labels[index]
-            return (anchor_image, pos_image, neg_image, anchor_label, anchor_smote_label)
-        return (anchor_image, pos_image, neg_image, anchor_label)
-    
-class ForTripletLossSmoteReversed(Dataset): 
-    # WIP, don't use yet 
-    def __init__(self, dataset, smote=True, num_classes=2, transform=None):
-        assert smote == True
-        assert num_classes==2
-        self.images = dataset.images.float()
-        self.labels = dataset.labels
-        self.smote = smote 
-
-        self.smote_labels = dataset.smote_labels
-        class0_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
-        class1_smote_mask = np.full_like(self.labels, fill_value=False, dtype=bool)
-
-        class0_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
-        class1_smote_mask[self.smote_labels==NO_SMOTE_LABEL] = True
-
-        class0_smote_mask[self.labels!=0] = False
-        class1_smote_mask[self.labels!=1] = False
-
-        self.class0_images = self.images[class0_smote_mask]
-        self.class1_images = self.images[class1_smote_mask]
-            
-        self.transform=transform 
-        self.num_classes = num_classes
-        
-         
-    def __len__(self):
-        return len(self.labels)
-    
-    def __getitem__(self, index):
-        anchor_image = self.images[index]
-        anchor_label = self.labels[index]
-       
-        if self.num_classes==2:
-            if anchor_label == 0:
-                pos_image = random.choice(self.class0_images)
-                neg_image = random.choice(self.class1_images)
-            else:
-                pos_image = random.choice(self.class1_images)
-                neg_image = random.choice(self.class0_images)
             
         
         if self.transform:

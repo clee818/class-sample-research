@@ -8,35 +8,6 @@ import torchvision.ops
 
 SMOTE_LABEL = 1
 
-class SigmoidFocalLoss(nn.Module):
-    def __init__(self, weight=None, 
-                 gamma=2., reduction='none'):
-        nn.Module.__init__(self)
-        self.weight = weight
-        self.gamma = gamma
-        self.reduction = reduction
-        
-    def forward(self, inputs, targets):
-        return torchvision.ops.sigmoid_focal_loss(inputs * self.weight, targets, gamma=self.gamma, reduction=self.reduction)
-    
-
-class SoftmaxFocalLoss(nn.Module): 
-    def __init__(self, weight=None, 
-                 gamma=2., reduction='none'):
-        nn.Module.__init__(self)
-        self.alpha = weight
-        self.gamma = gamma
-        self.reduction = reduction
-        
-    def forward(self, inputs, targets):
-        log_prob = F.log_softmax(inputs, dim=-1)
-        prob = torch.exp(log_prob)
-        return F.nll_loss(
-            ((1 - prob) ** self.gamma) * log_prob, 
-            targets, 
-            weight=self.alpha,
-            reduction = self.reduction)
-    
     
 class CappedBCELoss(nn.Module):
     def __init__(self, loss_cap=None, distance=None, reduction='mean', cap_array=None, function=None, print_loss=False, print_capped=False):
@@ -44,7 +15,7 @@ class CappedBCELoss(nn.Module):
         self.loss_cap = loss_cap # for constant cap, or hyperparameter to multiply cap by 
         self.distance = distance # for cosine or euclidean distance to be used 
         self.reduction = reduction
-        self.cap_array = cap_array # used if cap already calculated (e.g. using triplet loss)
+        self.cap_array = cap_array # used if cap already calculated (e.g. using triplet loss as the cap)
         self.function = function # for squaring, etc. 
         self.print_loss = print_loss
         self.print_capped = print_capped
@@ -302,22 +273,6 @@ class TripletLoss(nn.Module):
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.euclidean_distance(anchor, positive)
         distance_negative = self.euclidean_distance(anchor, negative)
-        #if self.reduction == 'mean':
-        #    distance_positive = distance_positive.mean()
-        #    distance_negative = distance_negative.mean()
-        """
-        print("Positive distance: " + str(distance_positive.shape))
-        print("Positive distance: " + str(distance_positive))
-        print("Negative distance: " + str(distance_negative.shape))
-        print("Negative distance: " + str(distance_negative))
-        print("Margin: " + str(self.margin))
-        """
-        """
-        losses = F.relu(distance_positive - distance_negative + self.margin)
-        if self.reduction == 'mean': 
-            losses = losses.mean() 
-     #   losses[losses == 0] = 0.00001
-     """
         losses = self.tripletloss(anchor, positive, negative) 
         return losses
     
@@ -367,4 +322,36 @@ class TripletLossSquaredPositive(nn.Module):
         losses = torch.relu(distance_positive - distance_negative + self.margin)
         losses[losses == 0] = 0.00001
         return losses
+    
+    
+
+class SigmoidFocalLoss(nn.Module):
+    def __init__(self, weight=None, 
+                 gamma=2., reduction='none'):
+        nn.Module.__init__(self)
+        self.weight = weight
+        self.gamma = gamma
+        self.reduction = reduction
+        
+    def forward(self, inputs, targets):
+        return torchvision.ops.sigmoid_focal_loss(inputs * self.weight, targets, gamma=self.gamma, reduction=self.reduction)
+    
+
+class SoftmaxFocalLoss(nn.Module): 
+    def __init__(self, weight=None, 
+                 gamma=2., reduction='none'):
+        nn.Module.__init__(self)
+        self.alpha = weight
+        self.gamma = gamma
+        self.reduction = reduction
+        
+    def forward(self, inputs, targets):
+        log_prob = F.log_softmax(inputs, dim=-1)
+        prob = torch.exp(log_prob)
+        return F.nll_loss(
+            ((1 - prob) ** self.gamma) * log_prob, 
+            targets, 
+            weight=self.alpha,
+            reduction = self.reduction)
+    
     
