@@ -3,8 +3,39 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class GrayscaleImage(nn.Module):
+  '''
+  Used to tile grayscale matrices to convert to 3-channel
+  '''
+  def __init__(self, model):
+      super(GrayscaleImage, self).__init__()
+      self.model = model
+
+  def forward(self, x):
+      x = x.repeat(1, 3, 1, 1)
+      return self.model(x)
+
+
+class Net(nn.Module):
+  '''
+  3 linear layers. When called, adds these three linear layers to end of model.
+  '''
+  def __init__(self):
+      super(Net, self).__init__()
+      self.fc1 = nn.Linear(1000, 512)
+      self.fc2 = nn.Linear(512, 256)
+      self.fc3 = nn.Linear(256, 1)
+
+  def forward(self, x):
+      x = self.fc1(x)
+      x = self.fc2(x)
+      x = self.fc3(x)
+      return x
+
+
 class ConvNet(nn.Module):
     def __init__(self, num_classes):
+        print("hello", flush=True)
         super(ConvNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
@@ -20,6 +51,28 @@ class ConvNet(nn.Module):
         x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
         x = F.relu(F.max_pool2d(self.conv2(x), 2))
         x = x.view(-1, 250) 
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return x
+
+class ConvNet_grayscale(nn.Module):
+    def __init__(self, num_classes):
+        super(ConvNet_grayscale, self).__init__()
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 10, kernel_size=5)
+        self.conv1_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(28090, 1000) 
+        if (num_classes == 2): 
+            self.fc2 = nn.Linear(1000, 1) 
+        else:
+            self.fc2 = nn.Linear(50, num_classes)
+            
+
+    def forward(self, x):
+        x = F.relu(F.max_pool2d(self.conv1_drop(self.conv1(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+        x = x.view(-1, 28090) 
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
