@@ -3,6 +3,11 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from imblearn.over_sampling import SMOTE  
 import random
+import itertools
+import torchvision
+from torchvision.io import read_image
+import pandas as pd
+
 
 class Reduce(Dataset):
     # reduces number of classes
@@ -39,35 +44,35 @@ class Ratio(Dataset):
     # assumes all classes are balanced 
     # takes in reduced or unreduced dataset 
     def __init__(self, original_dataset, num_classes, target_ratios, nums=(3,2,1), transform=None):
-        assert len(target_ratios) == num_classes
+        assert len(target_ratios) == num_classes # target ratios is a list of the ratios between classes. Makes sure length of tr is equivalent to num classes
        
-        self.nums=nums
+        self.nums=nums # nums = class labels
         
-        class_indices = np.isin(original_dataset.targets, nums)
+        class_indices = np.isin(original_dataset.targets, nums) # class indices are the indices of the original dataset samples that have the labels specified in nums
         
-        targets = np.asarray(original_dataset.targets)[class_indices]
-        images = original_dataset.data[class_indices]
+        targets = np.asarray(original_dataset.targets)[class_indices] # targets = numpy array of all the labels that have the right values (specified in nums)
+        images = original_dataset.data[class_indices] # all the images with the right labels
         
-        _, class_counts = np.unique(np.sort(targets), return_counts=True)
+        _, class_counts = np.unique(np.sort(targets), return_counts=True) # class counts = list with the number of samples in the class (for each class)
         
-        max_index = target_ratios.index(max(target_ratios))
+        max_index = target_ratios.index(max(target_ratios)) # the index of the smallest ratio in target ratios
         
-        updated_ratios = tuple(ratio/target_ratios[max_index] for ratio in target_ratios)
+        updated_ratios = tuple(ratio/target_ratios[max_index] for ratio in target_ratios) # scales the target ratios such that max ratio = 1
         
-        ratio_class_counts = tuple(int(ratio*class_count) for ratio, class_count in zip(updated_ratios, class_counts))
+        ratio_class_counts = tuple(int(ratio*class_count) for ratio, class_count in zip(updated_ratios, class_counts)) # scale target ratios so max ratio = class count for max index
         
                
         reduced_images = []
         reduced_labels = []
                 
-        for i, num in enumerate(nums):
-            class_images = images[(targets == num)]
-            class_images = torch.from_numpy(class_images)
-            indices = np.random.choice(class_images.shape[0], ratio_class_counts[i], replace=False)
-            reduced_images.append(class_images[indices])
-            reduced_labels.append(torch.from_numpy(np.full(ratio_class_counts[i], i)))
+        for i, num in enumerate(nums): # for each label in nums
+            class_images = images[(targets == num)] # taking all the images whose labels are equal to the current label
+            class_images = torch.from_numpy(class_images) # converts filtered class images from np array to tensor
+            indices = np.random.choice(class_images.shape[0], ratio_class_counts[i], replace=False) # gets the indices of a random subset of images
+            reduced_images.append(class_images[indices]) # append said images to the reduced images
+            reduced_labels.append(torch.from_numpy(np.full(ratio_class_counts[i], i))) # append their labels to reduced labels
         
-        self.images = torch.cat(reduced_images)
+        self.images = torch.cat(reduced_images) #end up with a reduced set of images, with randomly selected subset of images for each label
         self.labels = torch.cat(reduced_labels).int()
         self.transform=transform
      
@@ -75,7 +80,54 @@ class Ratio(Dataset):
         return len(self.labels)
                  
     def __getitem__(self, index): 
-        image = self.images[index].float()
+        image = self.images[index].float() # takes image from reduced images at given image
+        label = self.labels[index]
+        if self.transform:
+            image = self.transform(image)
+        return (image, label) 
+
+
+class Ratio_CheXpert_version(Dataset):
+    # assumes all classes are balanced 
+    # takes in reduced or unreduced dataset 
+    def __init__(self, labels_dataframe, num_classes, target_ratios, nums=(3,2,1), transform=None):
+        # assert len(target_ratios) == num_classes # target ratios is a list of the ratios between classes. Makes sure length of tr is equivalent to num classes
+       
+        self.nums=nums # nums = class labels
+        self.target_ratios = target_ratios
+               
+        reduced_images_paths = []
+        reduced_labels = []
+        class_count = 0
+
+                
+        for i, num in enumerate(nums): # for each label in nums
+            class_images = labels_dataframe.loc[labels_dataframe["Condition"]==num]
+            class_images_paths = class_images["Path"].to_numpy()
+
+            class_count = self.target_ratios[i]
+            assert len(class_images) >= class_count
+            indices = [random.randrange(0, class_count) for i in range(class_count)]
+
+            reduced_imgs = class_images_paths[indices].tolist()
+            reduced_images_paths.append(reduced_imgs) # append said images to the reduced images
+            reduced_lbls = np.full(class_count, i).tolist()
+            reduced_labels.append(reduced_lbls)
+
+
+        self.images = [item for sublist in reduced_images_paths for item in sublist] #end up with a reduced set of images, with randomly selected subset of images for each label
+        self.labels = [item for sublist in reduced_labels for item in sublist]
+        # my_df = pd.DataFrame({'Image paths': self.images, 'Labels': self.labels})
+        # print(my_df.head(n=50))
+
+
+     
+    def __len__(self):
+        return len(self.labels)
+                 
+    def __getitem__(self, index):
+        # image = torchvision.io.read_image(self.images[index])
+        image = np.zeros((1, 2320, 2828))
         label = self.labels[index]
         if self.transform:
             image = self.transform(image)
