@@ -1,5 +1,4 @@
 # CLE-SMOTE: Addressing Extreme Imbalanced Data Classification with Contrastive Learning-Enhanced SMOTE
-## Published at DMLR ICLR workshop 
 
 ## Notebooks 
 The main notebooks used to test are convnet_2_class.ipynb and convnet_3_class.ipynb. The notebook auc_graphs.ipynb is for graphing results. 
